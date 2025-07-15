@@ -426,6 +426,14 @@ function createAllModals() {
             ${createPressureInput('pressure', '作動圧力', '0.4', 'pressure_unit')}
             <div class="input-group"><label class="input-label">シリンダ内径 (MM)</label><input type="number" name="cylinder_diameter" class="input-field" value="63"></div>
             <div class="input-group"><label class="input-label">ロッド径 (MM)</label><input type="number" name="rod_diameter" class="input-field" value="24"></div>
+            <hr class="my-2">
+            <div class="input-group">
+                <label class="input-label">出力単位</label>
+                <div class="flex items-center space-x-4 mt-1">
+                    <label class="flex items-center"><input type="radio" name="output_unit" value="KGF" checked><span class="ml-2">KGF (重量キログラム)</span></label>
+                    <label class="flex items-center"><input type="radio" name="output_unit" value="N"><span class="ml-2">N (ニュートン)</span></label>
+                </div>
+            </div>
             <div id="p0-load-inputs" class="space-y-3 pl-5 hidden">
                 <div class="input-group"><label class="input-label">負荷の重量 (Kgf)</label><input type="number" name="load_weight" class="input-field" value="200"></div>
                 <div class="input-group"><label class="input-label">摩擦係数</label><input type="number" name="load_friction" class="input-field" value="0.3"></div>
