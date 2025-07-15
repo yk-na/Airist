@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>復刻☆空圧先生リベンジャー</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Montserrat:wght@800&family=Orbitron:wght@500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Hiragino Sans', 'ヒラギノ角ゴシック', 'メイリオ', Meiryo, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+        #app-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100vw;
+            height: 100vh;
+            background-color: #1f2937; /* bg-gray-800 */
+        }
+        .iphone-container {
+            width: 393px;
+            height: 852px;
+            box-shadow: 0 20px 30px rgba(0,0,0,0.15), 0 8px 10px rgba(0,0,0,0.1);
+            border-radius: 40px;
+            border: 10px solid #1a1a1a;
+            background: linear-gradient(to bottom, #e5e7eb, #d1d5db);
+            overflow: hidden;
+            position: relative;
+            flex-shrink: 0;
+            transform-origin: center center;
+            transition: transform 0.2s ease-in-out;
+        }
+        .key {
+            transition: all 0.08s ease-in-out;
+            border-radius: 8px;
+            box-shadow: 0 2px 3px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+            transform: scaleY(0.9);
+        }
+        .key:active {
+            transform: translateY(1.1px) scaleY(0.9); 
+            box-shadow: 0 1px 1px rgba(0,0,0,0.4), inset 0 1px 1px rgba(0,0,0,0.2);
+            filter: brightness(0.95);
+        }
+        .lcd-text {
+            font-family: 'Orbitron', sans-serif;
+            color: #93f2b8;
+            text-shadow: 0 0 3px #34d399, 0 0 5px #34d399;
+        }
+        .cursor {
+            background-color: rgba(52, 211, 153, 0.5);
+            outline: 1px solid rgba(52, 211, 153, 0.8);
+        }
+        .program-card-button {
+            background-color: #f3f4f6;
+            color: #1f2937;
+            border: 1px solid #9ca3af;
+            border-radius: 4px;
+            padding: 4px;
+            font-size: 14px;
+            text-align: center;
+            line-height: 1.2;
+            transition: all 0.1s ease;
+            touch-action: manipulation;
+        }
+        .program-card-button:active {
+            background-color: #d1d5db;
+            transform: scale(0.97);
+        }
+        .modal {
+            transition: opacity 0.2s ease-in-out;
+        }
+        .modal-content {
+            transition: all 0.2s ease-out;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal.hidden {
+            pointer-events: none;
+            opacity: 0;
+        }
+        .modal.hidden .modal-content { opacity: 0; transform: translateY(20px) scale(0.95); }
+        .input-group {
+            margin-bottom: 0.75rem;
+        }
+        .input-label {
+            display: block;
+            font-weight: 500;
+            color: #4b5563;
+        }
+        .input-field {
+            margin-top: 0.25rem;
+            display: block;
+            width: 100%;
+            border-color: #d1d5db;
+            border-radius: 0.375rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            font-size: 16px;
+            -webkit-appearance: none;
+        }
+        #display-area.function-result-mode #display {
+            display: none;
+        }
+        #display-area.function-result-mode #sub-display-container {
+            height: 100%;
+        }
+        .logo-font {
+            font-family: 'Montserrat', sans-serif;
+        }
+    </style>
+</head>
+<body class="m-0 p-0">
+
+    <div id="app-wrapper">
+        <!-- iPhoneコンテナ -->
+        <div id="app-container" class="iphone-container flex flex-col">
+            
+            <div class="h-12 flex-shrink-0 flex items-center justify-end px-5">
+                <span class="logo-font font-extrabold text-2xl tracking-wide" style="color: #008D74;">CKD</span>
+            </div>
+
+            <!-- 1. 表示エリア -->
+            <div class="bg-gray-900 p-2 pt-2">
+                <div id="display-area" class="bg-gray-800 p-3 rounded-md border-2 border-gray-700 h-40 flex flex-col">
+                    <div id="sub-display-container" class="flex-grow text-lg text-right w-full relative overflow-hidden">
+                        <div id="sub-display-content" class="absolute top-0 right-0 w-full whitespace-pre-wrap transition-transform duration-200 ease-in-out lcd-text" style="line-height: 1.4;"></div>
+                        <div id="scroll-indicator" class="absolute right-0 top-0 bottom-0 flex flex-col justify-between text-xs lcd-text hidden">
+                            <span id="scroll-up-indicator">▲</span>
+                            <span id="scroll-down-indicator">▼</span>
+                        </div>
+                    </div>
+                    <div id="display" class="flex-shrink-0 h-auto text-5xl break-all text-right w-full flex items-end justify-end lcd-text">
+                        <span class="cursor">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- プログラムネームカード (ボタン化) -->
+            <div class="bg-gray-300 p-3 border-y border-gray-400">
+                <div class="bg-white p-2 border border-gray-400 grid grid-cols-5 gap-2 text-center">
+                    <button data-action="openModal" data-value="P0" class="program-card-button"><span class="font-bold">P0</span><br>シリンダ出力</button>
+                    <button data-action="openModal" data-value="P1" class="program-card-button"><span class="font-bold">P1</span><br>運動</button>
+                    <button data-action="openModal" data-value="P2" class="program-card-button"><span class="font-bold">P2</span><br>有効断面積</button>
+                    <button data-action="openModal" data-value="P3" class="program-card-button"><span class="font-bold">P3</span><br>空気消費量</button>
+                    <button data-action="openModal" data-value="P4" class="program-card-button"><span class="font-bold">P4</span><br>流量</button>
+                    <button data-action="openModal" data-value="P5" class="program-card-button"><span class="font-bold">P5</span><br>三角関数</button>
+                    <button data-action="openModal" data-value="P6" class="program-card-button"><span class="font-bold">P6</span><br>対数</button>
+                    <button data-action="openModal" data-value="SP2" class="program-card-button"><span class="font-bold">SP2</span><br>圧力損失</button>
+                    <button data-action="openModal" data-value="SP3" class="program-card-button"><span class="font-bold">SP3</span><br>タンク充填</button>
+                    <button data-action="openModal" data-value="SP4" class="program-card-button"><span class="font-bold">SP4</span><br>タンク放出</button>
+                </div>
+            </div>
+
+            <!-- 2. キーパッドエリア -->
+            <div class="bg-gray-300 p-4 flex-grow">
+                <div class="grid grid-cols-5 gap-3 h-full">
+                    <!-- Row 1 -->
+                    <button data-action="moveCursor" data-value="left" class="key bg-gray-500 text-white text-xl font-medium aspect-square">←</button>
+                    <button data-action="moveCursor" data-value="right" class="key bg-gray-500 text-white text-xl font-medium aspect-square">→</button>
+                    <button data-action="toggleInsertMode" class="key bg-gray-500 text-white text-lg font-medium aspect-square">INS</button>
+                    <button data-action="clearDisplay" data-value="char" class="key bg-red-700 text-white text-lg font-medium aspect-square">C</button>
+                    <button data-action="clearDisplay" data-value="all" class="key bg-red-700 text-white text-lg font-medium aspect-square">AC</button>
+                    <!-- Row 2 -->
+                    <button data-action="pressMemory" data-value="MC" class="key bg-blue-700 text-white text-lg font-medium aspect-square">MC</button>
+                    <button data-action="pressMemory" data-value="MR" class="key bg-blue-700 text-white text-lg font-medium aspect-square">MR</button>
+                    <button data-action="pressMemory" data-value="M+" class="key bg-blue-700 text-white text-lg font-medium aspect-square">M+</button>
+                    <button data-action="pressMemory" data-value="M-" class="key bg-blue-700 text-white text-lg font-medium aspect-square">M-</button>
+                    <button data-action="pressKey" data-value="ANS" class="key bg-gray-800 text-white text-lg font-medium aspect-square">ANS</button>
+                    <!-- Row 3 -->
+                    <button data-action="pressKey" data-value="7" class="key bg-gray-800 text-white text-xl font-medium aspect-square">7</button>
+                    <button data-action="pressKey" data-value="8" class="key bg-gray-800 text-white text-xl font-medium aspect-square">8</button>
+                    <button data-action="pressKey" data-value="9" class="key bg-gray-800 text-white text-xl font-medium aspect-square">9</button>
+                    <button data-action="pressOperator" data-value="÷" class="key bg-gray-600 text-white text-xl font-medium aspect-square">÷</button>
+                    <button data-action="pressOperator" data-value="×" class="key bg-gray-600 text-white text-xl font-medium aspect-square">×</button>
+                    <!-- Row 4 -->
+                    <button data-action="pressKey" data-value="4" class="key bg-gray-800 text-white text-xl font-medium aspect-square">4</button>
+                    <button data-action="pressKey" data-value="5" class="key bg-gray-800 text-white text-xl font-medium aspect-square">5</button>
+                    <button data-action="pressKey" data-value="6" class="key bg-gray-800 text-white text-xl font-medium aspect-square">6</button>
+                    <button data-action="pressOperator" data-value="-" class="key bg-gray-600 text-white text-xl font-medium aspect-square">-</button>
+                    <button data-action="pressOperator" data-value="+" class="key bg-gray-600 text-white text-xl font-medium row-span-2">+</button>
+                    <!-- Row 5 -->
+                    <button data-action="pressKey" data-value="1" class="key bg-gray-800 text-white text-xl font-medium aspect-square">1</button>
+                    <button data-action="pressKey" data-value="2" class="key bg-gray-800 text-white text-xl font-medium aspect-square">2</button>
+                    <button data-action="pressKey" data-value="3" class="key bg-gray-800 text-white text-xl font-medium aspect-square">3</button>
+                    <button data-action="pressKey" data-value="." class="key bg-gray-800 text-white text-xl font-medium aspect-square">.</button>
+                    <!-- Row 6 -->
+                    <button data-action="pressKey" data-value="0" class="key bg-gray-800 text-white text-xl font-medium col-span-2">0</button>
+                    <button data-action="calculate" class="key bg-gray-600 text-white text-xl font-medium col-span-2">＝</button>
+                    <button data-action="toggleSizeLock" class="key bg-gray-500 text-white aspect-square">
+                        <svg id="lock-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        <svg id="unlock-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>
+                    </button>
+                </div>
+            </div>
+            <div id="modal-container"></div>
+        </div>
+    </div>
+<script src="ui.js"></script>
+</body>
+</html>
