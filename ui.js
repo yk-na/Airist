@@ -261,40 +261,62 @@ function toggleVis(element, condition) {
 }
 
 async function executeCalculation(functionId) {
-    const form = document.getElementById(`form-${functionId}`);
-    const formData = new FormData(form);
-    const params = {};
-    for (let [key, value] of formData.entries()) {
-        params[key] = value;
-    }
-
-    // For 1989 mode, convert pressure to kgf/cm2 if entered in MPa
-    if (currentMode === '1989') {
-        const MPA_TO_KGF = 10.19716;
-        const pressureFields = ['pressure', 'p1', 'p2', 'p1_bleed', 'supply_pressure', 'target_pressure', 'initial_pressure'];
-        pressureFields.forEach(field => {
-            if (params[field] && params[`${field}_unit`] === 'MPa') {
-                params[field] = (parseFloat(params[field]) * MPA_TO_KGF).toFixed(3);
-            }
-        });
-    }
-
-    if (functionId === 'P3') {
-        params.cylinders = [];
-        const cylinderGroups = form.querySelectorAll('.cylinder-group');
-        cylinderGroups.forEach(group => {
-            params.cylinders.push({
-                diameter: group.querySelector('[name=diameter]').value,
-                stroke: group.querySelector('[name=stroke]').value,
-                frequency: group.querySelector('[name=frequency]').value,
-                pipe_length: group.querySelector('[name=pipe_length]').value,
-                pipe_diameter: group.querySelector('[name=pipe_diameter]').value,
-            });
-        });
-    }
-    
+    // Wrap entire function in try...catch for better error reporting
     try {
+        const form = document.getElementById(`form-${functionId}`);
+        if (!form) {
+            throw new Error(`UI Error: Form 'form-${functionId}' not found.`);
+        }
+        
+        const formData = new FormData(form);
+        const params = {};
+        for (let [key, value] of formData.entries()) {
+            params[key] = value;
+        }
+
+        // --- Pressure Conversion Logic ---
+        const MPA_TO_KGF = 10.19716;
+        const KGF_TO_MPA = 0.0980665;
+        const pressureFields = [
+            'pressure', 'p1', 'p2', 'p1_bleed', 'supply_pressure', 
+            'target_pressure', 'initial_pressure', 'p1_2020', 'p2_2020'
+        ];
+
+        if (currentMode === '1989') {
+            // Backend expects kgf/cm². Convert if unit is MPa.
+            pressureFields.forEach(field => {
+                const unitField = `${field}_unit`;
+                if (params[field] && params[unitField] === 'MPa') {
+                    params[field] = (parseFloat(params[field]) * MPA_TO_KGF).toString();
+                }
+            });
+        } else { // currentMode === '2020'
+            // Backend expects MPa. Convert if unit is K/C.
+            pressureFields.forEach(field => {
+                const unitField = `${field}_unit`;
+                if (params[field] && params[unitField] === 'K/C') {
+                    params[field] = (parseFloat(params[field]) * KGF_TO_MPA).toString();
+                }
+            });
+        }
+
+        if (functionId === 'P3') {
+            params.cylinders = [];
+            const cylinderGroups = form.querySelectorAll('.cylinder-group');
+            cylinderGroups.forEach(group => {
+                params.cylinders.push({
+                    diameter: group.querySelector('[name=diameter]').value,
+                    stroke: group.querySelector('[name=stroke]').value,
+                    frequency: group.querySelector('[name=frequency]').value,
+                    pipe_length: group.querySelector('[name=pipe_length]').value,
+                    pipe_diameter: group.querySelector('[name=pipe_diameter]').value,
+                });
+            });
+        }
+        
         updateSubDisplay('計算中...', true);
+        console.log(`Sending request to backend. Mode: ${currentMode}, Function: ${functionId}`, params);
+
         const response = await fetch(`${BACKEND_URL}/calculate`, {
             method: 'POST',
             headers: {
@@ -304,16 +326,28 @@ async function executeCalculation(functionId) {
         });
 
         if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.error || `サーバーエラー: ${response.status}`);
+            const errText = await response.text();
+            try {
+                const errJson = JSON.parse(errText);
+                throw new Error(errJson.error || `サーバーエラー: ${response.status}`);
+            } catch {
+                throw new Error(`サーバー応答エラー: ${response.status} - ${errText}`);
+            }
         }
 
         const result = await response.json();
         displayCalculationResult(functionId, result);
         closeModal(functionId);
+
     } catch (e) {
-        console.error("Calculation Error in " + functionId, e);
-        updateSubDisplay("計算エラー: " + e.message, true);
+        console.error(`Calculation Error in ${functionId} (${currentMode} mode):`, e);
+        let errorMessage = "計算エラー: ";
+        if (e instanceof TypeError && e.message.includes('Failed to fetch')) {
+            errorMessage += "サーバーに接続できません。URLまたはネットワークを確認してください。";
+        } else {
+            errorMessage += e.message;
+        }
+        updateSubDisplay(errorMessage, true);
     }
 }
 
@@ -351,15 +385,18 @@ function updateSubDisplayScroll() {
 
 function createPressureInput(name, label, defaultValue, unitName, mode) {
     const is1989 = mode === '1989';
-    const defaultVal = is1989 ? (defaultValue * 10.197).toFixed(2) : defaultValue;
+    const KGF_TO_MPA = 0.0980665;
+    const defaultVal = is1989 ? (defaultValue / KGF_TO_MPA).toFixed(2) : defaultValue.toFixed(2);
+    const defaultUnit = is1989 ? 'K/C' : 'MPa';
+
     return `
         <div class="input-group">
             <label class="input-label">${label}</label>
             <div class="flex items-center mt-1">
                 <input type="number" name="${name}" class="input-field flex-grow" value="${defaultVal}" step="any">
                 <div class="text-xs pl-2 flex-shrink-0 space-y-1">
-                    <label class="flex items-center"><input type="radio" name="${unitName}" value="MPa" ${!is1989 ? 'checked' : ''}> <span class="pl-1">MPa</span></label>
-                    <label class="flex items-center"><input type="radio" name="${unitName}" value="K/C" ${is1989 ? 'checked' : ''}> <span class="pl-1">kgf/cm²</span></label>
+                    <label class="flex items-center"><input type="radio" name="${unitName}" value="MPa" ${defaultUnit === 'MPa' ? 'checked' : ''}> <span class="pl-1">MPa</span></label>
+                    <label class="flex items-center"><input type="radio" name="${unitName}" value="K/C" ${defaultUnit === 'K/C' ? 'checked' : ''}> <span class="pl-1">kgf/cm²</span></label>
                 </div>
             </div>
         </div>
@@ -388,14 +425,14 @@ function createAllModals() {
                 </div>
             </div>
             <div id="p0-load-inputs" class="space-y-3 pl-5 hidden">
-                <div class="input-group"><label class="input-label load-weight-label">負荷の重量 (N)</label><input type="number" name="load_weight" class="input-field" value="200"></div>
+                <div class="input-group"><label class="input-label load-weight-label">負荷の重量</label><input type="number" name="load_weight" class="input-field" value="1960"></div>
                 <div class="input-group"><label class="input-label">摩擦係数</label><input type="number" name="load_friction" class="input-field" value="0.3"></div>
             </div>
         `)}
         ${createModal('P1', '運動（動作時間・必要流量特性）', `
             <div data-change-handler="toggleP1">
                 <label class="flex items-center"><input type="radio" name="type" value="time" checked><span class="ml-2">動作時間を計算</span></label>
-                <label class="flex items-center"><input type="radio" name="type" value="necessary_s"><span class="ml-2">必要流量特性を計算</span></label>
+                <label class="flex items-center" id="p1-type-label-s"><input type="radio" name="type" value="necessary_s"><span class="ml-2"></span></label>
             </div>
             <div>
                 <label class="flex items-center"><input type="radio" name="direction" value="push" checked><span class="ml-2">PUSH</span></label>
@@ -413,7 +450,7 @@ function createAllModals() {
             <div class="input-group"><label class="input-label">シリンダ内径 (mm)</label><input type="number" name="cylinder_diameter" class="input-field" value="50"></div>
             <div class="input-group"><label class="input-label">ロッド径 (mm)</label><input type="number" name="rod_diameter" class="input-field" value="20"></div>
             <div class="input-group"><label class="input-label">ストローク (mm)</label><input type="number" name="stroke" class="input-field" value="300"></div>
-            <div class="input-group"><label class="input-label load-weight-label">負荷重量 (N)</label><input type="number" name="load_weight" class="input-field" value="480"></div>
+            <div class="input-group"><label class="input-label load-weight-label">負荷重量</label><input type="number" name="load_weight" class="input-field" value="480"></div>
             <div class="input-group"><label class="input-label">摩擦係数</label><input type="number" name="load_friction" class="input-field" value="0.4"></div>
         `)}
          ${createModal('P2', '流量特性', `
@@ -522,7 +559,7 @@ function updateModalUIForMode(modalId) {
     if (modalId === 'P1') {
         const unit = currentMode === '1989' ? 'kgf' : 'N';
         modal.querySelector('.load-weight-label').textContent = `負荷重量 (${unit})`;
-        const necessarySLabel = modal.querySelector('label[for="type_necessary_s"] span');
+        const necessarySLabel = modal.querySelector('#p1-type-label-s span');
         if (necessarySLabel) {
             necessarySLabel.textContent = currentMode === '1989' ? '必要有効断面積を計算' : '必要流量特性を計算';
         }
@@ -642,7 +679,7 @@ function setupEventListeners() {
                     toggleVis(modal.querySelector('#p2-composite-inputs'), element.value === 'composite');
                     break;
                 case 'generateCylinders':
-                    generateCylinderInputs(element.value);
+                    generateCylinderInputs(parseInt(element.value, 10) || 0);
                     break;
                 case 'toggleP4':
                     toggleVis(modal.querySelector('#p4-flow-inputs-1989'), element.value === 'flow');
@@ -708,4 +745,4 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners(); // Attach all event listeners
     handleModeChange(currentMode); // Initialize UI for the default mode
 });
-window.addEventListener('resize', adjustAppScale);
+window.addEventListener('resize', adjustAppScal
