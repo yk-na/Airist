@@ -47,17 +47,12 @@
             align-items: center;
             justify-content: center;
             touch-action: manipulation;
-            transform: scaleY(0.9); /* This makes it 10% shorter vertically */
+            transform: scaleY(0.9);
         }
         .key:active {
             transform: translateY(1.1px) scaleY(0.9); 
             box-shadow: 0 1px 1px rgba(0,0,0,0.4), inset 0 1px 1px rgba(0,0,0,0.2);
             filter: brightness(0.95);
-        }
-        .key:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            filter: grayscale(50%);
         }
         .lcd-text {
             font-family: 'Orbitron', sans-serif;
@@ -83,11 +78,6 @@
         .program-card-button:active {
             background-color: #d1d5db;
             transform: scale(0.97);
-        }
-        .program-card-button:disabled {
-            background-color: #e5e7eb;
-            color: #9ca3af;
-            cursor: not-allowed;
         }
         .modal {
             transition: opacity 0.2s ease-in-out;
@@ -129,46 +119,6 @@
         .logo-font {
             font-family: 'Montserrat', sans-serif;
         }
-        /* Mode Switch Styles */
-        .mode-switch-container {
-            background-color: #4b5563;
-            border-radius: 9999px;
-            padding: 4px;
-            display: flex;
-            width: 220px;
-            position: relative;
-        }
-        .mode-switch-label {
-            flex: 1;
-            text-align: center;
-            padding: 6px 0;
-            cursor: pointer;
-            z-index: 10;
-            transition: color 0.3s ease;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        .mode-switch-label.active {
-            color: #1f2937;
-        }
-        .mode-switch-label:not(.active) {
-            color: #d1d5db;
-        }
-        .mode-switch-bg {
-            position: absolute;
-            top: 4px;
-            bottom: 4px;
-            width: calc(50% - 4px);
-            background-color: #f9fafb;
-            border-radius: 9999px;
-            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-        }
-        #mode-1989:checked ~ .mode-switch-bg {
-            transform: translateX(0);
-        }
-        #mode-2020:checked ~ .mode-switch-bg {
-            transform: translateX(100%);
-        }
     </style>
 </head>
 <body class="m-0 p-0">
@@ -177,20 +127,12 @@
         <!-- iPhoneコンテナ -->
         <div id="app-container" class="iphone-container flex flex-col">
             
-            <div class="h-16 flex-shrink-0 flex items-center justify-between px-4">
-                <!-- Mode Switch -->
-                <div class="mode-switch-container">
-                    <input type="radio" id="mode-1989" name="calc_mode" value="1989" class="hidden">
-                    <label for="mode-1989" class="mode-switch-label">1989 空圧先生</label>
-                    <input type="radio" id="mode-2020" name="calc_mode" value="2020" class="hidden" checked>
-                    <label for="mode-2020" class="mode-switch-label active">2020 最新理論</label>
-                    <div class="mode-switch-bg"></div>
-                </div>
-                <a href="#" id="feedback-link" class="text-xs text-blue-600 hover:underline">ご意見・ご要望</a>
+            <div class="h-12 flex-shrink-0 flex items-center justify-end px-5">
+                <a href="#" id="feedback-link" class="logo-font font-extrabold text-2xl tracking-wide" style="color: #008D74; text-decoration: underline;">ご意見・ご要望はこちら</a>
             </div>
 
             <!-- 1. 表示エリア -->
-            <div class="bg-gray-900 p-2 pt-0">
+            <div class="bg-gray-900 p-2 pt-2">
                 <div id="display-area" class="bg-gray-800 p-3 rounded-md border-2 border-gray-700 h-40 flex flex-col">
                     <div id="sub-display-container" class="flex-grow text-lg text-right w-full relative overflow-hidden">
                         <div id="sub-display-content" class="absolute top-0 right-0 w-full whitespace-pre-wrap transition-transform duration-200 ease-in-out lcd-text" style="line-height: 1.4;"></div>
@@ -210,7 +152,7 @@
                 <div class="bg-white p-2 border border-gray-400 grid grid-cols-5 gap-2 text-center">
                     <button data-action="openModal" data-value="P0" class="program-card-button"><span class="font-bold">P0</span><br>シリンダ出力</button>
                     <button data-action="openModal" data-value="P1" class="program-card-button"><span class="font-bold">P1</span><br>運動</button>
-                    <button data-action="openModal" data-value="P2" class="program-card-button"><span class="font-bold">P2</span><br>流量特性</button>
+                    <button data-action="openModal" data-value="P2" class="program-card-button"><span class="font-bold">P2</span><br>有効断面積</button>
                     <button data-action="openModal" data-value="P3" class="program-card-button"><span class="font-bold">P3</span><br>空気消費量</button>
                     <button data-action="openModal" data-value="P4" class="program-card-button"><span class="font-bold">P4</span><br>流量</button>
                     <button data-action="openModal" data-value="P5" class="program-card-button"><span class="font-bold">P5</span><br>三角関数</button>
@@ -218,48 +160,45 @@
                     <button data-action="openModal" data-value="SP2" class="program-card-button"><span class="font-bold">SP2</span><br>圧力損失</button>
                     <button data-action="openModal" data-value="SP3" class="program-card-button"><span class="font-bold">SP3</span><br>タンク充填</button>
                     <button data-action="openModal" data-value="SP4" class="program-card-button"><span class="font-bold">SP4</span><br>タンク放出</button>
-                    <button data-action="openModal" data-value="P7" class="program-card-button new-feature" disabled><span class="font-bold">P7</span><br>エクセルギー</button>
-                    <button data-action="openModal" data-value="P8" class="program-card-button new-feature" disabled><span class="font-bold">P8</span><br>ドレン量</button>
-                    <button data-action="openModal" data-value="P9" class="program-card-button new-feature" disabled><span class="font-bold">P9</span><br>動特性</button>
                 </div>
             </div>
 
             <!-- 2. キーパッドエリア -->
-            <div class="bg-gray-300 p-4 flex flex-col justify-end flex-grow">
-                <div class="grid grid-cols-5 gap-2 pb-4">
+            <div class="bg-gray-300 p-4 flex-grow">
+                <div class="grid grid-cols-5 gap-3 h-full">
                     <!-- Row 1 -->
-                    <button data-action="moveCursor" data-value="left" class="key bg-gray-500 text-white text-xl font-medium h-12">←</button>
-                    <button data-action="moveCursor" data-value="right" class="key bg-gray-500 text-white text-xl font-medium h-12">→</button>
-                    <button data-action="toggleInsertMode" class="key bg-gray-500 text-white text-lg font-medium h-12">INS</button>
-                    <button data-action="clearDisplay" data-value="char" class="key bg-red-700 text-white text-lg font-medium h-12">C</button>
-                    <button data-action="clearDisplay" data-value="all" class="key bg-red-700 text-white text-lg font-medium h-12">AC</button>
+                    <button data-action="moveCursor" data-value="left" class="key bg-gray-500 text-white text-xl font-medium aspect-square">←</button>
+                    <button data-action="moveCursor" data-value="right" class="key bg-gray-500 text-white text-xl font-medium aspect-square">→</button>
+                    <button data-action="toggleInsertMode" class="key bg-gray-500 text-white text-lg font-medium aspect-square">INS</button>
+                    <button data-action="clearDisplay" data-value="char" class="key bg-red-700 text-white text-lg font-medium aspect-square">C</button>
+                    <button data-action="clearDisplay" data-value="all" class="key bg-red-700 text-white text-lg font-medium aspect-square">AC</button>
                     <!-- Row 2 -->
-                    <button data-action="pressMemory" data-value="MC" class="key bg-blue-700 text-white text-lg font-medium h-12">MC</button>
-                    <button data-action="pressMemory" data-value="MR" class="key bg-blue-700 text-white text-lg font-medium h-12">MR</button>
-                    <button data-action="pressMemory" data-value="M+" class="key bg-blue-700 text-white text-lg font-medium h-12">M+</button>
-                    <button data-action="pressMemory" data-value="M-" class="key bg-blue-700 text-white text-lg font-medium h-12">M-</button>
-                    <button data-action="pressKey" data-value="ANS" class="key bg-gray-800 text-white text-lg font-medium h-12">ANS</button>
+                    <button data-action="pressMemory" data-value="MC" class="key bg-blue-700 text-white text-lg font-medium aspect-square">MC</button>
+                    <button data-action="pressMemory" data-value="MR" class="key bg-blue-700 text-white text-lg font-medium aspect-square">MR</button>
+                    <button data-action="pressMemory" data-value="M+" class="key bg-blue-700 text-white text-lg font-medium aspect-square">M+</button>
+                    <button data-action="pressMemory" data-value="M-" class="key bg-blue-700 text-white text-lg font-medium aspect-square">M-</button>
+                    <button data-action="pressKey" data-value="ANS" class="key bg-gray-800 text-white text-lg font-medium aspect-square">ANS</button>
                     <!-- Row 3 -->
-                    <button data-action="pressKey" data-value="7" class="key bg-gray-800 text-white text-xl font-medium h-12">7</button>
-                    <button data-action="pressKey" data-value="8" class="key bg-gray-800 text-white text-xl font-medium h-12">8</button>
-                    <button data-action="pressKey" data-value="9" class="key bg-gray-800 text-white text-xl font-medium h-12">9</button>
-                    <button data-action="pressOperator" data-value="÷" class="key bg-gray-600 text-white text-xl font-medium h-12">÷</button>
-                    <button data-action="pressOperator" data-value="×" class="key bg-gray-600 text-white text-xl font-medium h-12">×</button>
+                    <button data-action="pressKey" data-value="7" class="key bg-gray-800 text-white text-xl font-medium aspect-square">7</button>
+                    <button data-action="pressKey" data-value="8" class="key bg-gray-800 text-white text-xl font-medium aspect-square">8</button>
+                    <button data-action="pressKey" data-value="9" class="key bg-gray-800 text-white text-xl font-medium aspect-square">9</button>
+                    <button data-action="pressOperator" data-value="÷" class="key bg-gray-600 text-white text-xl font-medium aspect-square">÷</button>
+                    <button data-action="pressOperator" data-value="×" class="key bg-gray-600 text-white text-xl font-medium aspect-square">×</button>
                     <!-- Row 4 -->
-                    <button data-action="pressKey" data-value="4" class="key bg-gray-800 text-white text-xl font-medium h-12">4</button>
-                    <button data-action="pressKey" data-value="5" class="key bg-gray-800 text-white text-xl font-medium h-12">5</button>
-                    <button data-action="pressKey" data-value="6" class="key bg-gray-800 text-white text-xl font-medium h-12">6</button>
-                    <button data-action="pressOperator" data-value="-" class="key bg-gray-600 text-white text-xl font-medium h-12">-</button>
-                    <button data-action="pressOperator" data-value="+" class="key bg-gray-600 text-white text-xl font-medium row-span-2 h-full">+</button>
+                    <button data-action="pressKey" data-value="4" class="key bg-gray-800 text-white text-xl font-medium aspect-square">4</button>
+                    <button data-action="pressKey" data-value="5" class="key bg-gray-800 text-white text-xl font-medium aspect-square">5</button>
+                    <button data-action="pressKey" data-value="6" class="key bg-gray-800 text-white text-xl font-medium aspect-square">6</button>
+                    <button data-action="pressOperator" data-value="-" class="key bg-gray-600 text-white text-xl font-medium aspect-square">-</button>
+                    <button data-action="pressOperator" data-value="+" class="key bg-gray-600 text-white text-xl font-medium row-span-2">+</button>
                     <!-- Row 5 -->
-                    <button data-action="pressKey" data-value="1" class="key bg-gray-800 text-white text-xl font-medium h-12">1</button>
-                    <button data-action="pressKey" data-value="2" class="key bg-gray-800 text-white text-xl font-medium h-12">2</button>
-                    <button data-action="pressKey" data-value="3" class="key bg-gray-800 text-white text-xl font-medium h-12">3</button>
-                    <button data-action="pressKey" data-value="." class="key bg-gray-800 text-white text-xl font-medium h-12">.</button>
+                    <button data-action="pressKey" data-value="1" class="key bg-gray-800 text-white text-xl font-medium aspect-square">1</button>
+                    <button data-action="pressKey" data-value="2" class="key bg-gray-800 text-white text-xl font-medium aspect-square">2</button>
+                    <button data-action="pressKey" data-value="3" class="key bg-gray-800 text-white text-xl font-medium aspect-square">3</button>
+                    <button data-action="pressKey" data-value="." class="key bg-gray-800 text-white text-xl font-medium aspect-square">.</button>
                     <!-- Row 6 -->
-                    <button data-action="pressKey" data-value="0" class="key bg-gray-800 text-white text-xl font-medium h-12 col-span-2">0</button>
-                    <button data-action="calculate" class="key bg-gray-600 text-white text-xl font-medium h-12 col-span-2">＝</button>
-                    <button data-action="toggleSizeLock" class="key bg-gray-500 text-white h-12">
+                    <button data-action="pressKey" data-value="0" class="key bg-gray-800 text-white text-xl font-medium col-span-2">0</button>
+                    <button data-action="calculate" class="key bg-gray-600 text-white text-xl font-medium col-span-2">＝</button>
+                    <button data-action="toggleSizeLock" class="key bg-gray-500 text-white aspect-square">
                         <svg id="lock-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                         <svg id="unlock-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>
                     </button>
