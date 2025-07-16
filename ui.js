@@ -11,6 +11,7 @@ const scrollUpIndicator = document.getElementById('scroll-up-indicator');
 const scrollDownIndicator = document.getElementById('scroll-down-indicator');
 const lockIcon = document.getElementById('lock-icon');
 const unlockIcon = document.getElementById('unlock-icon');
+const modeSwitchLabels = document.querySelectorAll('.mode-switch-label');
 
 let expression = '0';
 let cursorPosition = 1;
@@ -20,9 +21,7 @@ let memoryValue = 0;
 let lastAns = 0;
 let isSizeLocked = false;
 let subDisplayMessageTimeout;
-const ATMOSPHERIC_PRESSURE = 1.033;
-const G = 9.8;
-const G_CM = 980;
+let currentMode = '2020'; // '1989' or '2020'
 
 // ★★★ 重要 ★★★
 // Renderにデプロイした後、バックエンドサーバーのURLをここに設定してください。
@@ -215,10 +214,25 @@ function pressMemory(type) {
     }
 }
 
+// --- Mode Switch Logic ---
+function handleModeChange(mode) {
+    currentMode = mode;
+    // Update active label style
+    modeSwitchLabels.forEach(label => {
+        label.classList.toggle('active', label.htmlFor === `mode-${mode}`);
+    });
+    // Disable/enable new feature buttons
+    document.querySelectorAll('.new-feature').forEach(button => {
+        button.disabled = (mode === '1989');
+    });
+    updateSubDisplay(`モード切替: ${mode === '1989' ? '1989 空圧先生' : '2020 最新理論'}`, true);
+}
+
 // --- Modal Control & Logic ---
 function openModal(modalId) {
     const modal = document.getElementById(`modal-${modalId}`);
     if (modal) {
+        updateModalUIForMode(modalId);
         modal.classList.remove('hidden');
         const content = modal.querySelector('.modal-content');
         setTimeout(() => {
@@ -240,28 +254,9 @@ function closeModal(modalId) {
     }
 }
 
-function toggleVis(elementId, condition) {
-    document.getElementById(elementId).classList.toggle('hidden', !condition);
-}
-
-function handleUnitChange(radio) {
-    const MPA_TO_KGF = 10.19716;
-    const KGF_TO_MPA = 0.0980665;
-    
-    const inputGroup = radio.closest('.input-group');
-    if (!inputGroup) return;
-
-    const numberInput = inputGroup.querySelector('input[type=number]');
-    if (!numberInput) return;
-
-    let currentValue = parseFloat(numberInput.value);
-
-    if (isNaN(currentValue)) return;
-
-    if (radio.value === 'K/C') {
-        numberInput.value = (currentValue * MPA_TO_KGF).toFixed(2);
-    } else {
-        numberInput.value = (currentValue * KGF_TO_MPA).toFixed(3);
+function toggleVis(element, condition) {
+    if (element) {
+        element.classList.toggle('hidden', !condition);
     }
 }
 
@@ -273,30 +268,17 @@ async function executeCalculation(functionId) {
         params[key] = value;
     }
 
-    const MPA_TO_KGF = 10.19716;
-    const KGF_TO_MPA = 0.0980665;
-
-    const pressureFieldMap = {
-        'pressure': 'pressure_unit',
-        'p1': 'p1_unit',
-        'p2': 'p2_unit',
-        'p1_bleed': 'p1_bleed_unit',
-        'supply_pressure': 'supply_pressure_unit',
-        'target_pressure': 'target_pressure_unit',
-        'initial_pressure': 'initial_pressure_unit'
-    };
-    
-    for (const fieldName in pressureFieldMap) {
-        if (params[fieldName] && params[fieldName] !== '') {
-            const unitFieldName = pressureFieldMap[fieldName];
-            if (params[unitFieldName] === 'MPa') {
-                params[fieldName] = parseFloat(params[fieldName]) * MPA_TO_KGF;
-            } else {
-                params[fieldName] = parseFloat(params[fieldName]);
+    // For 1989 mode, convert pressure to kgf/cm2 if entered in MPa
+    if (currentMode === '1989') {
+        const MPA_TO_KGF = 10.19716;
+        const pressureFields = ['pressure', 'p1', 'p2', 'p1_bleed', 'supply_pressure', 'target_pressure', 'initial_pressure'];
+        pressureFields.forEach(field => {
+            if (params[field] && params[`${field}_unit`] === 'MPa') {
+                params[field] = (parseFloat(params[field]) * MPA_TO_KGF).toFixed(3);
             }
-        }
+        });
     }
-    
+
     if (functionId === 'P3') {
         params.cylinders = [];
         const cylinderGroups = form.querySelectorAll('.cylinder-group');
@@ -318,31 +300,15 @@ async function executeCalculation(functionId) {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ functionId, params }),
+            body: JSON.stringify({ functionId, calculationMode: currentMode, params }),
         });
 
         if (!response.ok) {
-            throw new Error(`サーバーエラー: ${response.status}`);
+            const err = await response.json();
+            throw new Error(err.error || `サーバーエラー: ${response.status}`);
         }
 
         const result = await response.json();
-
-        const primaryUnitRadio = form.querySelector('input[name$="_unit"]:checked');
-        const primaryUnit = primaryUnitRadio ? primaryUnitRadio.value : 'MPa';
-
-        if (functionId === 'SP2' && result["圧力損失"]) {
-            let valueKgf = parseFloat(result["圧力損失"]);
-            result["圧力損失"] = primaryUnit === 'MPa' 
-                ? `${(valueKgf * KGF_TO_MPA).toFixed(3)} MPa`
-                : `${valueKgf.toFixed(2)} K/C`;
-        }
-        if ((functionId === 'SP3' || functionId === 'SP4') && result["T秒後の圧力"]) {
-            let valueKgf = parseFloat(result["T秒後の圧力"]);
-             result["T秒後の圧力"] = primaryUnit === 'MPa'
-                ? `${(valueKgf * KGF_TO_MPA).toFixed(3)} MPa`
-                : `${valueKgf.toFixed(2)} K/C`;
-        }
-        
         displayCalculationResult(functionId, result);
         closeModal(functionId);
     } catch (e) {
@@ -383,37 +349,24 @@ function updateSubDisplayScroll() {
     scrollDownIndicator.style.visibility = subDisplayScrollTop < maxScroll ? 'visible' : 'hidden';
 }
 
-function createModal(id, title, content) {
-    return `
-        <div id="modal-${id}" class="modal absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden">
-            <div class="modal-content bg-gray-100 rounded-lg shadow-xl w-full max-w-sm p-6 border-2 border-gray-300">
-                <form id="form-${id}">
-                    <h2 class="text-xl font-bold mb-4 text-gray-800">${title}</h2>
-                    <div class="space-y-3 text-sm">${content}</div>
-                    <div class="mt-6 flex justify-end space-x-3">
-                        <button type="button" data-action="closeModal" data-modal-id="${id}" class="key bg-gray-300 text-gray-800 px-4 py-2 font-medium">キャンセル</button>
-                        <button type="button" data-action="executeCalculation" data-modal-id="${id}" class="key bg-blue-600 text-white px-4 py-2 font-bold">計算</button>
-                    </div>
-                </form>
-            </div>
-        </div>`;
-}
-
-function createPressureInput(name, label, defaultValueMpa, unitName) {
+function createPressureInput(name, label, defaultValue, unitName, mode) {
+    const is1989 = mode === '1989';
+    const defaultVal = is1989 ? (defaultValue * 10.197).toFixed(2) : defaultValue;
     return `
         <div class="input-group">
             <label class="input-label">${label}</label>
             <div class="flex items-center mt-1">
-                <input type="number" name="${name}" class="input-field flex-grow" value="${defaultValueMpa}" step="any">
+                <input type="number" name="${name}" class="input-field flex-grow" value="${defaultVal}" step="any">
                 <div class="text-xs pl-2 flex-shrink-0 space-y-1">
-                    <label class="flex items-center"><input type="radio" name="${unitName}" value="MPa" checked> <span class="pl-1">MPa</span></label>
-                    <label class="flex items-center"><input type="radio" name="${unitName}" value="K/C"> <span class="pl-1">K/C</span></label>
+                    <label class="flex items-center"><input type="radio" name="${unitName}" value="MPa" ${!is1989 ? 'checked' : ''}> <span class="pl-1">MPa</span></label>
+                    <label class="flex items-center"><input type="radio" name="${unitName}" value="K/C" ${is1989 ? 'checked' : ''}> <span class="pl-1">kgf/cm²</span></label>
                 </div>
             </div>
         </div>
     `;
 }
 
+// --- Modal Creation & UI Update ---
 function createAllModals() {
     const modalContainer = document.getElementById('modal-container');
     modalContainer.innerHTML = `
@@ -423,26 +376,26 @@ function createAllModals() {
                 <label class="flex items-center"><input type="radio" name="type" value="load_rate"><span class="ml-2">負荷率も計算</span></label>
             </div>
             <hr class="my-2">
-            ${createPressureInput('pressure', '作動圧力', '0.4', 'pressure_unit')}
-            <div class="input-group"><label class="input-label">シリンダ内径 (MM)</label><input type="number" name="cylinder_diameter" class="input-field" value="63"></div>
-            <div class="input-group"><label class="input-label">ロッド径 (MM)</label><input type="number" name="rod_diameter" class="input-field" value="24"></div>
+            <div class="pressure-input-p0"></div>
+            <div class="input-group"><label class="input-label">シリンダ内径 (mm)</label><input type="number" name="cylinder_diameter" class="input-field" value="63"></div>
+            <div class="input-group"><label class="input-label">ロッド径 (mm)</label><input type="number" name="rod_diameter" class="input-field" value="24"></div>
             <hr class="my-2">
             <div class="input-group">
                 <label class="input-label">出力単位</label>
                 <div class="flex items-center space-x-4 mt-1">
-                    <label class="flex items-center"><input type="radio" name="output_unit" value="KGF" checked><span class="ml-2">KGF (重量キログラム)</span></label>
-                    <label class="flex items-center"><input type="radio" name="output_unit" value="N"><span class="ml-2">N (ニュートン)</span></label>
+                    <label class="flex items-center"><input type="radio" name="output_unit" value="N" checked><span class="ml-2">N (ニュートン)</span></label>
+                    <label class="flex items-center"><input type="radio" name="output_unit" value="KGF"><span class="ml-2">kgf (重量キログラム)</span></label>
                 </div>
             </div>
             <div id="p0-load-inputs" class="space-y-3 pl-5 hidden">
-                <div class="input-group"><label class="input-label">負荷の重量 (Kgf)</label><input type="number" name="load_weight" class="input-field" value="200"></div>
+                <div class="input-group"><label class="input-label load-weight-label">負荷の重量 (N)</label><input type="number" name="load_weight" class="input-field" value="200"></div>
                 <div class="input-group"><label class="input-label">摩擦係数</label><input type="number" name="load_friction" class="input-field" value="0.3"></div>
             </div>
         `)}
-        ${createModal('P1', '運動（動作時間・必要S）', `
+        ${createModal('P1', '運動（動作時間・必要流量特性）', `
             <div data-change-handler="toggleP1">
                 <label class="flex items-center"><input type="radio" name="type" value="time" checked><span class="ml-2">動作時間を計算</span></label>
-                <label class="flex items-center"><input type="radio" name="type" value="necessary_s"><span class="ml-2">必要有効断面積を計算</span></label>
+                <label class="flex items-center"><input type="radio" name="type" value="necessary_s"><span class="ml-2">必要流量特性を計算</span></label>
             </div>
             <div>
                 <label class="flex items-center"><input type="radio" name="direction" value="push" checked><span class="ml-2">PUSH</span></label>
@@ -450,23 +403,23 @@ function createAllModals() {
             </div>
             <hr class="my-2">
             <div id="p1-time-inputs">
-                <div class="input-group"><label class="input-label">合成有効断面積S (mm²)</label><input type="number" name="s_composite" class="input-field" value="5.68"></div>
-                <div class="input-group"><label class="input-label">配管容積 ΔV (cm³)</label><input type="number" name="pipe_volume" class="input-field" value="50"></div>
+                 <div class="mode-1989 hidden"><div class="input-group"><label class="input-label">合成有効断面積S (mm²)</label><input type="number" name="s_composite" class="input-field" value="5.68"></div></div>
+                 <div class="mode-2020 hidden"><div class="input-group"><label class="input-label">音速コンダクタンスC (L/(s·bar))</label><input type="number" name="c_conductance" class="input-field" value="1.2"></div></div>
             </div>
             <div id="p1-s-inputs" class="hidden">
-                <div class="input-group"><label class="input-label">目標動作時間 (sec)</label><input type="number" name="time" class="input-field" value="0.8"></div>
+                <div class="input-group"><label class="input-label">目標動作時間 (s)</label><input type="number" name="time" class="input-field" value="0.8"></div>
             </div>
-            ${createPressureInput('pressure', '作動圧力', '0.5', 'pressure_unit')}
+            <div class="pressure-input-p1"></div>
             <div class="input-group"><label class="input-label">シリンダ内径 (mm)</label><input type="number" name="cylinder_diameter" class="input-field" value="50"></div>
             <div class="input-group"><label class="input-label">ロッド径 (mm)</label><input type="number" name="rod_diameter" class="input-field" value="20"></div>
             <div class="input-group"><label class="input-label">ストローク (mm)</label><input type="number" name="stroke" class="input-field" value="300"></div>
-            <div class="input-group"><label class="input-label">負荷重量 (Kgf)</label><input type="number" name="load_weight" class="input-field" value="49"></div>
+            <div class="input-group"><label class="input-label load-weight-label">負荷重量 (N)</label><input type="number" name="load_weight" class="input-field" value="480"></div>
             <div class="input-group"><label class="input-label">摩擦係数</label><input type="number" name="load_friction" class="input-field" value="0.4"></div>
         `)}
-         ${createModal('P2', '有効断面積', `
+         ${createModal('P2', '流量特性', `
             <div data-change-handler="toggleP2">
-                <label class="flex items-center"><input type="radio" name="type" value="pipe" checked><span class="ml-2">配管のS</span></label>
-                <label class="flex items-center"><input type="radio" name="type" value="composite"><span class="ml-2">Sの合成</span></label>
+                <label class="flex items-center"><input type="radio" name="type" value="pipe" checked><span class="ml-2">配管の流量特性</span></label>
+                <label class="flex items-center"><input type="radio" name="type" value="composite"><span class="ml-2">流量特性の合成</span></label>
             </div>
             <hr class="my-2">
             <div id="p2-pipe-inputs">
@@ -475,28 +428,37 @@ function createAllModals() {
                 <div class="input-group"><label class="input-label">配管内径 (mm)</label><input type="number" name="pipe_diameter" class="input-field" value="16.1"></div>
             </div>
             <div id="p2-composite-inputs" class="hidden">
-                <div class="input-group"><label class="input-label">各有効断面積 (カンマ区切り)</label><input type="text" name="s_values" class="input-field" value="15,8,20"></div>
+                 <div class="mode-1989 hidden"><div class="input-group"><label class="input-label">各有効断面積S (カンマ区切り)</label><input type="text" name="s_values" class="input-field" value="15,8,20"></div></div>
+                 <div class="mode-2020 hidden"><div class="input-group"><label class="input-label">各C,b値 (例: 1.2,0.3; 1.5,0.5)</label><input type="text" name="cb_values" class="input-field" value="1.2,0.3;1.5,0.5"></div></div>
             </div>
         `)}
         ${createModal('P3', '空気消費量', `
-            ${createPressureInput('pressure', '作動圧力', '0.4', 'pressure_unit')}
+            <div class="pressure-input-p3"></div>
             <div class="input-group"><label class="input-label">シリンダの本数</label><input type="number" name="num_cylinders" class="input-field" value="2" data-change-handler="generateCylinders"></div>
             <div id="p3-cylinder-inputs" class="space-y-4"></div>
         `)}
         ${createModal('P4', '流量', `
-            <div data-change-handler="toggleP4">
-                <label class="flex items-center"><input type="radio" name="type" value="flow" checked><span class="ml-2">流量</span></label>
-                <label class="flex items-center"><input type="radio" name="type" value="bleed"><span class="ml-2">ブリード量</span></label>
+            <div class="mode-1989 hidden">
+                <div data-change-handler="toggleP4">
+                    <label class="flex items-center"><input type="radio" name="type_1989" value="flow" checked><span class="ml-2">流量</span></label>
+                    <label class="flex items-center"><input type="radio" name="type_1989" value="bleed"><span class="ml-2">ブリード量</span></label>
+                </div>
+                <hr class="my-2">
+                <div id="p4-flow-inputs-1989">
+                    <div class="pressure-input-p4-p1-1989"></div>
+                    <div class="pressure-input-p4-p2-1989"></div>
+                    <div class="input-group"><label class="input-label">絞り部のS (mm²)</label><input type="number" name="s_1989" class="input-field" value="10"></div>
+                </div>
+                <div id="p4-bleed-inputs-1989" class="hidden">
+                    <div class="pressure-input-p4-p1bleed-1989"></div>
+                    <div class="input-group"><label class="input-label">ノズル内径 (mm)</label><input type="number" name="nozzle_diameter_1989" class="input-field" value="0.8"></div>
+                </div>
             </div>
-            <hr class="my-2">
-            <div id="p4-flow-inputs">
-                ${createPressureInput('p1', '1次側圧力', '0.5', 'p1_unit')}
-                ${createPressureInput('p2', '2次側圧力', '0.38', 'p2_unit')}
-                <div class="input-group"><label class="input-label">絞り部のS (mm²)</label><input type="number" name="s" class="input-field" value="10"></div>
-            </div>
-            <div id="p4-bleed-inputs" class="hidden">
-                ${createPressureInput('p1_bleed', '圧力', '0.3', 'p1_bleed_unit')}
-                <div class="input-group"><label class="input-label">ノズル内径 (mm)</label><input type="number" name="nozzle_diameter" class="input-field" value="0.8"></div>
+            <div class="mode-2020 hidden">
+                 <div class="pressure-input-p4-p1-2020"></div>
+                 <div class="pressure-input-p4-p2-2020"></div>
+                 <div class="input-group"><label class="input-label">音速コンダクタンスC</label><input type="number" name="c_conductance_2020" class="input-field" value="2.0"></div>
+                 <div class="input-group"><label class="input-label">臨界圧力比b</label><input type="number" name="b_ratio_2020" class="input-field" value="0.3"></div>
             </div>
         `)}
         ${createModal('P5', '三角関数', `
@@ -508,8 +470,8 @@ function createAllModals() {
             <div class="input-group"><label class="input-label">値</label><input type="number" name="value" class="input-field" value="5230"></div>
         `)}
         ${createModal('SP2', '配管の圧力損失', `
-            ${createPressureInput('pressure', '元圧力', '0.7', 'pressure_unit')}
-            <div class="input-group"><label class="input-label">流量 (l/min)</label><input type="number" name="flow" class="input-field" value="5000"></div>
+            <div class="pressure-input-sp2"></div>
+            <div class="input-group"><label class="input-label">流量 (L/min)</label><input type="number" name="flow" class="input-field" value="5000"></div>
             <div class="input-group"><label class="input-label">配管長さ (m)</label><input type="number" name="length" class="input-field" value="30"></div>
             <div class="input-group"><label class="input-label">配管内径 (mm)</label><input type="number" name="diameter" class="input-field" value="27.6"></div>
         `)}
@@ -520,11 +482,12 @@ function createAllModals() {
                 <label><input type="radio" name="type" value="pressure_after_t"> T秒後の圧力</label>
             </div>
             <hr class="my-2">
-            ${createPressureInput('supply_pressure', '供給圧力', '0.3', 'supply_pressure_unit')}
-            <div class="input-group"><label class="input-label">タンク容積 (l)</label><input type="number" name="volume" class="input-field" value="20"></div>
-            <div class="input-group"><label class="input-label">絞り部のS (mm²)</label><input type="number" name="s" class="input-field" value="12"></div>
-            <div id="sp3-p-input" class="hidden">${createPressureInput('target_pressure', '目標圧力 P', '0.25', 'target_pressure_unit')}</div>
-            <div id="sp3-t-input" class="hidden"><div class="input-group"><label class="input-label">充填時間 T (sec)</label><input type="number" name="fill_time" class="input-field" value="3"></div></div>
+            <div class="pressure-input-sp3-supply"></div>
+            <div class="input-group"><label class="input-label">タンク容積 (L)</label><input type="number" name="volume" class="input-field" value="20"></div>
+            <div class="mode-1989 hidden"><div class="input-group"><label class="input-label">絞り部のS (mm²)</label><input type="number" name="s" class="input-field" value="12"></div></div>
+            <div class="mode-2020 hidden"><div class="input-group"><label class="input-label">回路のC (L/(s·bar))</label><input type="number" name="c_conductance_sp3" class="input-field" value="2.5"></div></div>
+            <div id="sp3-p-input" class="hidden"><div class="pressure-input-sp3-target"></div></div>
+            <div id="sp3-t-input" class="hidden"><div class="input-group"><label class="input-label">充填時間 T (s)</label><input type="number" name="fill_time" class="input-field" value="3"></div></div>
         `)}
         ${createModal('SP4', 'タンクからの空気圧の放出', `
              <div data-change-handler="toggleSP4">
@@ -533,32 +496,67 @@ function createAllModals() {
                 <label><input type="radio" name="type" value="pressure_after_t"> T秒後の圧力</label>
             </div>
             <hr class="my-2">
-            ${createPressureInput('initial_pressure', '初期圧力', '0.5', 'initial_pressure_unit')}
-            <div class="input-group"><label class="input-label">タンク容積 (l)</label><input type="number" name="volume" class="input-field" value="60"></div>
-            <div class="input-group"><label class="input-label">絞り部のS (mm²)</label><input type="number" name="s" class="input-field" value="18"></div>
-            <div id="sp4-p-input" class="hidden">${createPressureInput('target_pressure', '目標圧力 P', '0.4', 'target_pressure_unit')}</div>
-            <div id="sp4-t-input" class="hidden"><div class="input-group"><label class="input-label">放出時間 T (sec)</label><input type="number" name="release_time" class="input-field" value="2.5"></div></div>
+            <div class="pressure-input-sp4-initial"></div>
+            <div class="input-group"><label class="input-label">タンク容積 (L)</label><input type="number" name="volume" class="input-field" value="60"></div>
+            <div class="mode-1989 hidden"><div class="input-group"><label class="input-label">絞り部のS (mm²)</label><input type="number" name="s" class="input-field" value="18"></div></div>
+            <div class="mode-2020 hidden"><div class="input-group"><label class="input-label">回路のC (L/(s·bar))</label><input type="number" name="c_conductance_sp4" class="input-field" value="4.0"></div></div>
+            <div id="sp4-p-input" class="hidden"><div class="pressure-input-sp4-target"></div></div>
+            <div id="sp4-t-input" class="hidden"><div class="input-group"><label class="input-label">放出時間 T (s)</label><input type="number" name="release_time" class="input-field" value="2.5"></div></div>
         `)}
     `;
 }
 
-function generateCylinderInputs(count) {
-    const container = document.getElementById('p3-cylinder-inputs');
-    if (!container) return;
-    container.innerHTML = '';
-    for (let i = 1; i <= count; i++) {
-        container.innerHTML += `
-            <div class="cylinder-group border-t pt-2 mt-2">
-                <h4 class="font-bold mb-2">シリンダ ${i}</h4>
-                <div class="input-group"><label class="input-label">内径 (mm)</label><input type="number" name="diameter" class="input-field" value="40"></div>
-                <div class="input-group"><label class="input-label">ストローク (mm)</label><input type="number" name="stroke" class="input-field" value="100"></div>
-                <div class="input-group"><label class="input-label">動作頻度 (回/min)</label><input type="number" name="frequency" class="input-field" value="12"></div>
-                <div class="input-group"><label class="input-label">配管長さ (m)</label><input type="number" name="pipe_length" class="input-field" value="1"></div>
-                <div class="input-group"><label class="input-label">配管内径 (mm)</label><input type="number" name="pipe_diameter" class="input-field" value="6"></div>
-            </div>
-        `;
+function updateModalUIForMode(modalId) {
+    const modal = document.getElementById(`modal-${modalId}`);
+    if (!modal) return;
+
+    // Toggle visibility of mode-specific containers
+    modal.querySelectorAll('.mode-1989').forEach(el => toggleVis(el, currentMode === '1989'));
+    modal.querySelectorAll('.mode-2020').forEach(el => toggleVis(el, currentMode === '2020'));
+
+    // Update labels and units
+    if (modalId === 'P0') {
+        const unit = currentMode === '1989' ? 'kgf' : 'N';
+        modal.querySelector('.load-weight-label').textContent = `負荷の重量 (${unit})`;
+    }
+    if (modalId === 'P1') {
+        const unit = currentMode === '1989' ? 'kgf' : 'N';
+        modal.querySelector('.load-weight-label').textContent = `負荷重量 (${unit})`;
+        const necessarySLabel = modal.querySelector('label[for="type_necessary_s"] span');
+        if (necessarySLabel) {
+            necessarySLabel.textContent = currentMode === '1989' ? '必要有効断面積を計算' : '必要流量特性を計算';
+        }
+    }
+    if (modalId === 'P2') {
+        modal.querySelector('h2').textContent = currentMode === '1989' ? '有効断面積' : '流量特性';
+    }
+    
+    // Dynamically create pressure inputs with correct defaults
+    const pressureInputs = {
+        'P0': { selector: '.pressure-input-p0', name: 'pressure', label: '作動圧力', value: 0.4 },
+        'P1': { selector: '.pressure-input-p1', name: 'pressure', label: '作動圧力', value: 0.5 },
+        'P3': { selector: '.pressure-input-p3', name: 'pressure', label: '作動圧力', value: 0.4 },
+        'SP2':{ selector: '.pressure-input-sp2', name: 'pressure', label: '元圧力', value: 0.7 },
+        'SP3_supply': { selector: '.pressure-input-sp3-supply', name: 'supply_pressure', label: '供給圧力', value: 0.3 },
+        'SP3_target': { selector: '.pressure-input-sp3-target', name: 'target_pressure', label: '目標圧力P', value: 0.25 },
+        'SP4_initial': { selector: '.pressure-input-sp4-initial', name: 'initial_pressure', label: '初期圧力', value: 0.5 },
+        'SP4_target': { selector: '.pressure-input-sp4-target', name: 'target_pressure', label: '目標圧力P', value: 0.4 },
+        'P4_p1_1989': { selector: '.pressure-input-p4-p1-1989', name: 'p1', label: '1次側圧力', value: 0.5 },
+        'P4_p2_1989': { selector: '.pressure-input-p4-p2-1989', name: 'p2', label: '2次側圧力', value: 0.38 },
+        'P4_p1bleed_1989': { selector: '.pressure-input-p4-p1bleed-1989', name: 'p1_bleed', label: '圧力', value: 0.3 },
+        'P4_p1_2020': { selector: '.pressure-input-p4-p1-2020', name: 'p1_2020', label: '1次側圧力', value: 0.5 },
+        'P4_p2_2020': { selector: '.pressure-input-p4-p2-2020', name: 'p2_2020', label: '2次側圧力', value: 0.38 },
+    };
+
+    for (const key in pressureInputs) {
+        const { selector, name, label, value } = pressureInputs[key];
+        const container = modal.querySelector(selector);
+        if (container) {
+            container.innerHTML = createPressureInput(name, label, value, `${name}_unit`, currentMode);
+        }
     }
 }
+
 
 function toggleSizeLock() {
     isSizeLocked = !isSizeLocked;
@@ -619,41 +617,44 @@ function setupEventListeners() {
     appContainer.addEventListener('change', (event) => {
         const element = event.target;
         
-        // For unit conversion
-        if (element.matches('input[type="radio"][name$="_unit"]')) {
-            handleUnitChange(element);
+        // For mode switching
+        if (element.matches('input[name="calc_mode"]')) {
+            handleModeChange(element.value);
         }
 
         // For dynamic UI changes in modals
         const changeHandler = element.closest('[data-change-handler]');
         if (changeHandler) {
             const handlerName = changeHandler.dataset.changeHandler;
+            const modal = element.closest('.modal-content');
+            if(!modal) return;
+
             switch (handlerName) {
                 case 'toggleP0':
-                    toggleVis('p0-load-inputs', element.value === 'load_rate');
+                    toggleVis(modal.querySelector('#p0-load-inputs'), element.value === 'load_rate');
                     break;
                 case 'toggleP1':
-                    toggleVis('p1-time-inputs', element.value === 'time');
-                    toggleVis('p1-s-inputs', element.value === 'necessary_s');
+                    toggleVis(modal.querySelector('#p1-time-inputs'), element.value === 'time');
+                    toggleVis(modal.querySelector('#p1-s-inputs'), element.value === 'necessary_s');
                     break;
                 case 'toggleP2':
-                    toggleVis('p2-pipe-inputs', element.value === 'pipe');
-                    toggleVis('p2-composite-inputs', element.value === 'composite');
+                    toggleVis(modal.querySelector('#p2-pipe-inputs'), element.value === 'pipe');
+                    toggleVis(modal.querySelector('#p2-composite-inputs'), element.value === 'composite');
                     break;
                 case 'generateCylinders':
                     generateCylinderInputs(element.value);
                     break;
                 case 'toggleP4':
-                    toggleVis('p4-flow-inputs', element.value === 'flow');
-                    toggleVis('p4-bleed-inputs', element.value === 'bleed');
+                    toggleVis(modal.querySelector('#p4-flow-inputs-1989'), element.value === 'flow');
+                    toggleVis(modal.querySelector('#p4-bleed-inputs-1989'), element.value === 'bleed');
                     break;
                 case 'toggleSP3':
-                    toggleVis('sp3-p-input', element.value === 'fill_time_to_p');
-                    toggleVis('sp3-t-input', element.value === 'pressure_after_t');
+                    toggleVis(modal.querySelector('#sp3-p-input'), element.value === 'fill_time_to_p');
+                    toggleVis(modal.querySelector('#sp3-t-input'), element.value === 'pressure_after_t');
                     break;
                 case 'toggleSP4':
-                    toggleVis('sp4-p-input', element.value === 'release_time_to_p');
-                    toggleVis('sp4-t-input', element.value === 'pressure_after_t');
+                    toggleVis(modal.querySelector('#sp4-p-input'), element.value === 'release_time_to_p');
+                    toggleVis(modal.querySelector('#sp4-t-input'), element.value === 'pressure_after_t');
                     break;
             }
         }
@@ -681,11 +682,30 @@ function setupEventListeners() {
     }
 }
 
+function generateCylinderInputs(count) {
+    const container = document.getElementById('p3-cylinder-inputs');
+    if (!container) return;
+    container.innerHTML = '';
+    for (let i = 1; i <= count; i++) {
+        container.innerHTML += `
+            <div class="cylinder-group border-t pt-2 mt-2">
+                <h4 class="font-bold mb-2">シリンダ ${i}</h4>
+                <div class="input-group"><label class="input-label">内径 (mm)</label><input type="number" name="diameter" class="input-field" value="40"></div>
+                <div class="input-group"><label class="input-label">ストローク (mm)</label><input type="number" name="stroke" class="input-field" value="100"></div>
+                <div class="input-group"><label class="input-label">動作頻度 (回/min)</label><input type="number" name="frequency" class="input-field" value="12"></div>
+                <div class="input-group"><label class="input-label">配管長さ (m)</label><input type="number" name="pipe_length" class="input-field" value="1"></div>
+                <div class="input-group"><label class="input-label">配管内径 (mm)</label><input type="number" name="pipe_diameter" class="input-field" value="6"></div>
+            </div>
+        `;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     createAllModals();
     generateCylinderInputs(2);
     renderDisplayWithCursor();
     adjustAppScale();
     setupEventListeners(); // Attach all event listeners
+    handleModeChange(currentMode); // Initialize UI for the default mode
 });
 window.addEventListener('resize', adjustAppScale);
