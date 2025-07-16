@@ -658,6 +658,27 @@ function setupEventListeners() {
             }
         }
     });
+
+    // Feedback link click handler
+    const feedbackLink = document.getElementById('feedback-link');
+    if (feedbackLink) {
+        feedbackLink.addEventListener('click', async (event) => {
+            event.preventDefault(); // デフォルトのリンク動作をキャンセル
+            try {
+                const response = await fetch(`${BACKEND_URL}/feedback-url`);
+                if (!response.ok) {
+                    throw new Error('Could not fetch feedback URL.');
+                }
+                const data = await response.json();
+                if (data.url) {
+                    window.open(data.url, '_blank');
+                }
+            } catch (error) {
+                console.error('Feedback link error:', error);
+                updateSubDisplay('リンクを取得できませんでした', true);
+            }
+        });
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
