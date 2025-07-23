@@ -26,7 +26,7 @@ const G_CM = 980;
 
 // ★★★ 重要 ★★★
 // Renderにデプロイした後、バックエンドサーバーのURLをここに設定してください。
-const BACKEND_URL = '[https://pkun-backend.onrender.com](https://pkun-backend.onrender.com)'; // 例: '[https://your-app-name.onrender.com](https://your-app-name.onrender.com)'
+const BACKEND_URL = 'https://pkun-backend.onrender.com'; // 例: 'https://your-app-name.onrender.com'
 
 // Sub-display scroll state
 let subDisplayScrollTop = 0;
@@ -273,10 +273,6 @@ async function executeCalculation(functionId) {
         params[key] = value;
     }
 
-    // ★★★ エラー修正箇所 ★★★
-    // バックエンドは常に kgf/cm² での入力を想定しているため、
-    // フロントエンド側でMPaが選択されている場合は、送信前に kgf/cm² に変換します。
-    const MPA_TO_KGF = 10.19716;
     const KGF_TO_MPA = 0.0980665;
 
     const pressureFieldMap = {
@@ -289,13 +285,13 @@ async function executeCalculation(functionId) {
         'initial_pressure': 'initial_pressure_unit'
     };
     
-    // paramsオブジェクト内の圧力値をループでチェックし、必要に応じて単位を変換します。
     for (const fieldName in pressureFieldMap) {
         if (params[fieldName] && params[fieldName] !== '') {
             const unitFieldName = pressureFieldMap[fieldName];
             if (params[unitFieldName] === 'MPa') {
-                // paramsオブジェクトの値を直接上書きして、MPaからkgf/cm²に変換します。
-                params[fieldName] = parseFloat(params[fieldName]) * MPA_TO_KGF;
+                // MPaの場合は何もしない（バックエンドでK/Cに変換されることを想定しない）
+            } else { // K/Cの場合
+                // K/Cの値をそのまま送信
             }
         }
     }
@@ -325,8 +321,7 @@ async function executeCalculation(functionId) {
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || `サーバーエラー: ${response.status}`);
+            throw new Error(`サーバーエラー: ${response.status}`);
         }
 
         const result = await response.json();
@@ -334,7 +329,6 @@ async function executeCalculation(functionId) {
         const primaryUnitRadio = form.querySelector('input[name$="_unit"]:checked');
         const primaryUnit = primaryUnitRadio ? primaryUnitRadio.value : 'MPa';
 
-        // バックエンドから返された結果（kgf/cm²）を、ユーザーが選択した単位（MPa）に戻して表示します。
         if (functionId === 'SP2' && result["圧力損失"]) {
             let valueKgc = parseFloat(result["圧力損失"]);
             result["圧力損失"] = primaryUnit === 'MPa' 
@@ -463,6 +457,7 @@ function createAllModals() {
                 <div class="input-group"><label class="input-label">目標動作時間 (sec)</label><input type="number" name="time" class="input-field" value="0.8"></div>
             </div>
 
+            <!-- ★★★ 機能追加 ★★★ -->
             <div data-change-handler="toggleP1PipeInput">
                 <label class="flex items-center"><input type="radio" name="pipe_volume_input_type" value="direct" checked><span class="ml-2">配管容積を直接入力</span></label>
                 <label class="flex items-center"><input type="radio" name="pipe_volume_input_type" value="calculate"><span class="ml-2">配管の内径と長さから計算</span></label>
