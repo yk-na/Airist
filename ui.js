@@ -483,7 +483,6 @@ function createAllModals() {
             </div>
             <hr class="my-2">
             
-            <!-- ★★★ 機能追加 ★★★ -->
             <div class="input-group" data-change-handler="toggleP1LoadInput">
                 <label class="input-label">負荷の入力方法</label>
                 <div class="text-xs space-y-1 mt-1">
@@ -501,6 +500,19 @@ function createAllModals() {
             </div>
             <div id="p1-load-rate-input" class="hidden">
                  <div class="input-group"><label class="input-label">負荷率 (%)</label><input type="number" name="load_rate" class="input-field" value="50"></div>
+            </div>
+            <hr class="my-2">
+
+            <!-- ★★★ 機能追加 ★★★ -->
+            <div class="input-group" data-change-handler="toggleP1OrificeInput">
+                <label class="input-label">シリンダ接続口シボリ</label>
+                <div class="text-xs space-y-1 mt-1">
+                    <label class="flex items-center"><input type="radio" name="has_orifice" value="no" checked><span class="pl-1">無し</span></label>
+                    <label class="flex items-center"><input type="radio" name="has_orifice" value="yes"><span class="pl-1">有り</span></label>
+                </div>
+            </div>
+            <div id="p1-orifice-input" class="hidden">
+                 <div class="input-group"><label class="input-label">オリフィス径 (mm)</label><input type="number" name="orifice_diameter" class="input-field" value="4"></div>
             </div>
 
             ${createPressureInput('pressure', '作動圧力', '0.5', 'pressure_unit')}
@@ -690,11 +702,14 @@ function setupEventListeners() {
                     toggleVis('p1-s-direct-input', element.value === 'direct');
                     toggleVis('p1-s-calculate-inputs', element.value === 'calculate');
                     break;
-                // ★★★ 機能追加 ★★★
                 case 'toggleP1LoadInput':
                     toggleVis('p1-load-weight-friction-inputs', element.value === 'weight_friction');
                     toggleVis('p1-load-value-input', element.value === 'value');
                     toggleVis('p1-load-rate-input', element.value === 'rate');
+                    break;
+                // ★★★ 機能追加 ★★★
+                case 'toggleP1OrificeInput':
+                    toggleVis('p1-orifice-input', element.value === 'yes');
                     break;
                 case 'toggleP2':
                     toggleVis('p2-pipe-inputs', element.value === 'pipe');
