@@ -451,12 +451,12 @@ function createAllModals() {
     // ★★★ 修正箇所 ★★★
     // ツールチップHTMLを生成する関数を定義
     const jisTooltip = (id) => `
-        <div id="${id}" class="tooltip absolute bg-white p-3 rounded-lg shadow-lg border border-gray-300 z-50 hidden" style="width: 200px; left: 50%; transform: translateX(-50%);">
+        <div id="${id}" class="tooltip absolute bg-white p-3 rounded-lg shadow-lg border border-gray-300 z-50 hidden" style="width: 200px; left: 50%; transform: translate(-50%, -50%);">
             ${createJISTableHTML()}
         </div>
     `;
     const steelPipeTooltip = (id) => `
-        <div id="${id}" class="tooltip absolute bg-white p-3 rounded-lg shadow-lg border border-gray-300 z-50 hidden" style="width: 200px; left: 50%; transform: translateX(-50%);">
+        <div id="${id}" class="tooltip absolute bg-white p-3 rounded-lg shadow-lg border border-gray-300 z-50 hidden" style="width: 200px; left: 50%; transform: translate(-50%, -50%);">
             ${createSteelPipeTableHTML()}
         </div>
     `;
