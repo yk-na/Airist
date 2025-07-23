@@ -413,6 +413,51 @@ function createPressureInput(name, label, defaultValueMpa, unitName) {
     `;
 }
 
+// ★★★ 機能追加 ★★★
+// JIS Bロッド径の参照表ツールチップを表示する関数
+function showJISTooltip(event) {
+    // 既存のツールチップがあれば削除
+    const existingTooltip = document.querySelector('.jis-tooltip');
+    if (existingTooltip) {
+        existingTooltip.remove();
+    }
+
+    event.stopPropagation(); // 親要素へのイベント伝播を停止
+
+    const jisData = [
+        { bore: 40, rod: 16 }, { bore: 50, rod: 20 }, { bore: 63, rod: 20 },
+        { bore: 80, rod: 25 }, { bore: 100, rod: 32 }, { bore: 125, rod: 36 },
+        { bore: 140, rod: 36 }, { bore: 160, rod: 40 }, { bore: 180, rod: 45 }
+    ];
+
+    const tableHeader = `<thead><tr><th class="px-2 py-1">シリンダ内径</th><th class="px-2 py-1">ロッド径</th></tr></thead>`;
+    const tableBody = `<tbody>${jisData.map(d => `<tr><td class="text-center px-2 py-1">${d.bore}</td><td class="text-center px-2 py-1">${d.rod}</td></tr>`).join('')}</tbody>`;
+    const tableHtml = `<h4 class="font-bold text-center mb-2">JIS Bロッド径 (mm)</h4><table class="w-full text-xs">${tableHeader}${tableBody}</table>`;
+
+    const tooltip = document.createElement('div');
+    tooltip.className = 'jis-tooltip absolute bg-white p-3 rounded-lg shadow-lg border border-gray-300 z-50';
+    tooltip.innerHTML = tableHtml;
+
+    const target = event.currentTarget;
+    const modalContent = target.closest('.modal-content');
+    modalContent.appendChild(tooltip);
+
+    const targetRect = target.getBoundingClientRect();
+    const modalRect = modalContent.getBoundingClientRect();
+
+    tooltip.style.left = `${targetRect.left - modalRect.left}px`;
+    tooltip.style.top = `${targetRect.bottom - modalRect.top + 5}px`;
+
+    // どこかをクリックしたらツールチップを閉じる
+    const closeTooltip = () => {
+        tooltip.remove();
+        document.removeEventListener('click', closeTooltip);
+    };
+    // 少し遅延させてからイベントリスナーを登録し、ツールチップ表示直後のクリックで閉じないようにする
+    setTimeout(() => document.addEventListener('click', closeTooltip), 10);
+}
+
+
 function createAllModals() {
     const modalContainer = document.getElementById('modal-container');
     modalContainer.innerHTML = `
@@ -423,8 +468,15 @@ function createAllModals() {
             </div>
             <hr class="my-2">
             ${createPressureInput('pressure', '作動圧力', '0.4', 'pressure_unit')}
-            <div class="input-group"><label class="input-label">シリンダ内径 (mm)</label><input type="number" name="cylinder_diameter" class="input-field" value="63"></div>
-            <div class="input-group"><label class="input-label">ロッド径 (mm)</label><input type="number" name="rod_diameter" class="input-field" value="24"></div>
+            <!-- ★★★ 機能追加 ★★★ -->
+            <div class="input-group">
+                <label class="input-label cursor-pointer" data-action="showJISTooltip">シリンダ内径 (mm) ⓘ</label>
+                <input type="number" name="cylinder_diameter" class="input-field" value="63">
+            </div>
+            <div class="input-group">
+                <label class="input-label cursor-pointer" data-action="showJISTooltip">ロッド径 (mm) ⓘ</label>
+                <input type="number" name="rod_diameter" class="input-field" value="24">
+            </div>
             <hr class="my-2">
             <div class="input-group">
                 <label class="input-label">出力単位</label>
@@ -503,7 +555,6 @@ function createAllModals() {
             </div>
             <hr class="my-2">
 
-            <!-- ★★★ 機能追加 ★★★ -->
             <div class="input-group" data-change-handler="toggleP1OrificeInput">
                 <label class="input-label">シリンダ接続口シボリ</label>
                 <div class="text-xs space-y-1 mt-1">
