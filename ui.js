@@ -431,7 +431,6 @@ function createJISTableHTML() {
     return `<h4 class="font-bold text-center mb-2">JIS Bロッド径 (mm)</h4><table class="w-full text-xs">${tableHeader}${tableBody}</table>`;
 }
 
-// ★★★ 機能追加 ★★★
 // 鋼管内径の参照表HTMLを生成するヘルパー関数
 function createSteelPipeTableHTML() {
     const pipeData = [
@@ -449,16 +448,15 @@ function createSteelPipeTableHTML() {
 function createAllModals() {
     const modalContainer = document.getElementById('modal-container');
 
-    const p0TooltipHTML = `
-        <div id="p0-jis-tooltip" class="tooltip absolute bg-white p-3 rounded-lg shadow-lg border border-gray-300 z-50 hidden" style="width: 200px; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+    // ★★★ 修正箇所 ★★★
+    // ツールチップHTMLを生成する関数を定義
+    const jisTooltip = (id) => `
+        <div id="${id}" class="tooltip absolute bg-white p-3 rounded-lg shadow-lg border border-gray-300 z-50 hidden" style="width: 200px; left: 50%; transform: translateX(-50%);">
             ${createJISTableHTML()}
         </div>
     `;
-    
-    // ★★★ 機能追加 ★★★
-    // 各モーダル用の鋼管ツールチップHTMLを定義
     const steelPipeTooltip = (id) => `
-        <div id="${id}" class="tooltip absolute bg-white p-3 rounded-lg shadow-lg border border-gray-300 z-50 hidden" style="width: 200px; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+        <div id="${id}" class="tooltip absolute bg-white p-3 rounded-lg shadow-lg border border-gray-300 z-50 hidden" style="width: 200px; left: 50%; transform: translateX(-50%);">
             ${createSteelPipeTableHTML()}
         </div>
     `;
@@ -493,7 +491,7 @@ function createAllModals() {
                 <div class="input-group"><label class="input-label">負荷の重量 (Kgf)</label><input type="number" name="load_weight" class="input-field" value="200"></div>
                 <div class="input-group"><label class="input-label">摩擦係数</label><input type="number" name="load_friction" class="input-field" value="0.3"></div>
             </div>
-        `, p0TooltipHTML)}
+        `, jisTooltip('p0-jis-tooltip'))}
         
         ${createModal('P1', '運動（動作時間・必要S）', `
             <div data-change-handler="toggleP1">
@@ -571,10 +569,10 @@ function createAllModals() {
             </div>
 
             ${createPressureInput('pressure', '作動圧力', '0.5', 'pressure_unit')}
-            <div class="input-group"><label class="input-label">シリンダ内径 (mm)</label><input type="number" name="cylinder_diameter" class="input-field" value="50"></div>
-            <div class="input-group"><label class="input-label">ロッド径 (mm)</label><input type="number" name="rod_diameter" class="input-field" value="20"></div>
+            <div class="input-group"><label class="input-label cursor-pointer" data-action="toggleTooltip" data-tooltip-target="#p1-jis-tooltip">シリンダ内径 (mm) ⓘ</label><input type="number" name="cylinder_diameter" class="input-field" value="50"></div>
+            <div class="input-group"><label class="input-label cursor-pointer" data-action="toggleTooltip" data-tooltip-target="#p1-jis-tooltip">ロッド径 (mm) ⓘ</label><input type="number" name="rod_diameter" class="input-field" value="20"></div>
             <div class="input-group"><label class="input-label">ストローク (mm)</label><input type="number" name="stroke" class="input-field" value="300"></div>
-        `, steelPipeTooltip('p1-steel-pipe-tooltip'))}
+        `, `${jisTooltip('p1-jis-tooltip')}${steelPipeTooltip('p1-steel-pipe-tooltip')}`)}
 
          ${createModal('P2', '有効断面積', `
             <div data-change-handler="toggleP2">
@@ -719,6 +717,13 @@ function setupEventListeners() {
                 document.querySelectorAll('.tooltip').forEach(tt => tt.classList.add('hidden'));
                 // 対象のツールチップが表示されていなかった場合、表示する
                 if (isHidden) {
+                    // ★★★ 修正箇所 ★★★
+                    // ツールチップ表示時にスクロール位置を考慮して中央に配置
+                    const modalContent = tooltip.closest('.modal-content');
+                    if (modalContent) {
+                        const topPosition = modalContent.scrollTop + (modalContent.clientHeight / 2);
+                        tooltip.style.top = `${topPosition}px`;
+                    }
                     tooltip.classList.remove('hidden');
                 }
             }
