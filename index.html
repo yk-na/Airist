@@ -119,6 +119,24 @@
         .logo-font {
             font-family: 'Montserrat', sans-serif;
         }
+
+        /* ▼▼▼ ここから変更箇所 ▼▼▼ */
+        /* 色を滑らかに変化させるためのアニメーションを定義 */
+        @keyframes smoothColorChange {
+            0%   { color: #e74c3c; } /* 赤 */
+            16%  { color: #e67e22; } /* 橙 */
+            33%  { color: #f1c40f; } /* 黄 */
+            50%  { color: #2ecc71; } /* 緑 */
+            66%  { color: #3498db; } /* 青 */
+            83%  { color: #9b59b6; } /* 紫 */
+            100% { color: #e74c3c; } /* ループのため赤に戻る */
+        }
+
+        /* アニメーションを適用 */
+        #feedback-link {
+            animation: smoothColorChange 9s linear infinite;
+        }
+        /* ▲▲▲ ここまでが変更箇所 ▲▲▲ */
     </style>
 </head>
 <body class="m-0 p-0">
@@ -128,7 +146,8 @@
         <div id="app-container" class="iphone-container flex flex-col">
             
             <div class="h-12 flex-shrink-0 flex items-center justify-end px-5">
-                <a href="#" id="feedback-link" class="logo-font font-extrabold text-2xl tracking-wide" style="color: #008D74; text-decoration: underline;">ご意見・ご要望はこちら</a>
+                <!-- ▼▼▼ style属性から color 指定のみを削除しました ▼▼▼ -->
+                <a href="#" id="feedback-link" class="logo-font font-extrabold tracking-wide" style="text-decoration: underline;">取扱の注意点、要望はこちら</a>
             </div>
 
             <!-- 1. 表示エリア -->
