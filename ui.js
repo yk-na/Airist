@@ -450,7 +450,6 @@ function createAllModals() {
             </div>
             <hr class="my-2">
             
-            <!-- ★★★ 機能追加 ★★★ -->
             <div id="p1-time-inputs-container">
                 <div data-change-handler="toggleP1SInput">
                     <label class="flex items-center"><input type="radio" name="s_input_type" value="direct" checked><span class="ml-2">合成有効断面積を直接入力</span></label>
@@ -482,13 +481,32 @@ function createAllModals() {
                 <div class="input-group"><label class="input-label">配管の長さ (m)</label><input type="number" name="p1_pipe_length" class="input-field" value="1"></div>
                 <div class="input-group"><label class="input-label">配管の内径 (mm)</label><input type="number" name="p1_pipe_diameter" class="input-field" value="8"></div>
             </div>
+            <hr class="my-2">
             
+            <!-- ★★★ 機能追加 ★★★ -->
+            <div class="input-group" data-change-handler="toggleP1LoadInput">
+                <label class="input-label">負荷の入力方法</label>
+                <div class="text-xs space-y-1 mt-1">
+                    <label class="flex items-center"><input type="radio" name="load_input_type" value="weight_friction" checked><span class="pl-1">重量とまさつ係数</span></label>
+                    <label class="flex items-center"><input type="radio" name="load_input_type" value="value"><span class="pl-1">負荷の値</span></label>
+                    <label class="flex items-center"><input type="radio" name="load_input_type" value="rate"><span class="pl-1">負荷率</span></label>
+                </div>
+            </div>
+            <div id="p1-load-weight-friction-inputs" class="space-y-3">
+                <div class="input-group"><label class="input-label">負荷重量 (Kgf)</label><input type="number" name="load_weight" class="input-field" value="49"></div>
+                <div class="input-group"><label class="input-label">摩擦係数</label><input type="number" name="load_friction" class="input-field" value="0.4"></div>
+            </div>
+            <div id="p1-load-value-input" class="hidden">
+                 <div class="input-group"><label class="input-label">負荷の値 (Kgf)</label><input type="number" name="load_value" class="input-field" value="20"></div>
+            </div>
+            <div id="p1-load-rate-input" class="hidden">
+                 <div class="input-group"><label class="input-label">負荷率 (%)</label><input type="number" name="load_rate" class="input-field" value="50"></div>
+            </div>
+
             ${createPressureInput('pressure', '作動圧力', '0.5', 'pressure_unit')}
             <div class="input-group"><label class="input-label">シリンダ内径 (mm)</label><input type="number" name="cylinder_diameter" class="input-field" value="50"></div>
             <div class="input-group"><label class="input-label">ロッド径 (mm)</label><input type="number" name="rod_diameter" class="input-field" value="20"></div>
             <div class="input-group"><label class="input-label">ストローク (mm)</label><input type="number" name="stroke" class="input-field" value="300"></div>
-            <div class="input-group"><label class="input-label">負荷重量 (Kgf)</label><input type="number" name="load_weight" class="input-field" value="49"></div>
-            <div class="input-group"><label class="input-label">摩擦係数</label><input type="number" name="load_friction" class="input-field" value="0.4"></div>
         `)}
 
          ${createModal('P2', '有効断面積', `
@@ -668,10 +686,15 @@ function setupEventListeners() {
                     toggleVis('p1-pipe-volume-direct-inputs', element.value === 'direct');
                     toggleVis('p1-pipe-volume-calculate-inputs', element.value === 'calculate');
                     break;
-                // ★★★ 機能追加 ★★★
                 case 'toggleP1SInput':
                     toggleVis('p1-s-direct-input', element.value === 'direct');
                     toggleVis('p1-s-calculate-inputs', element.value === 'calculate');
+                    break;
+                // ★★★ 機能追加 ★★★
+                case 'toggleP1LoadInput':
+                    toggleVis('p1-load-weight-friction-inputs', element.value === 'weight_friction');
+                    toggleVis('p1-load-value-input', element.value === 'value');
+                    toggleVis('p1-load-rate-input', element.value === 'rate');
                     break;
                 case 'toggleP2':
                     toggleVis('p2-pipe-inputs', element.value === 'pipe');
