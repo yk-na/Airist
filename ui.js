@@ -448,7 +448,6 @@ function createSteelPipeTableHTML() {
 function createAllModals() {
     const modalContainer = document.getElementById('modal-container');
 
-    // ★★★ ここから修正 ★★★
     // ツールチップHTMLを生成する関数を定義
     // HTML内のstyle属性から left と transform を削除
     const jisTooltip = (id) => `
@@ -468,6 +467,17 @@ function createAllModals() {
                 ころがりの場合 U=0.1<br>
                 すべりの場合 U=0.4<br>
                 上方向動作の場合は U=1 に相当します。
+            </p>
+        </div>
+    `;
+    // ★★★ ここから修正 ★★★
+    const loadRateTooltip = (id) => `
+        <div id="${id}" class="tooltip absolute bg-white p-4 rounded-lg shadow-lg border border-gray-300 z-50 hidden" style="width: 280px;">
+            <h4 class="font-bold text-center mb-2">負荷率について</h4>
+            <p class="text-xs text-left leading-relaxed">
+                重量物をシリンダでスムーズに移動させるには、負荷を70％以下に抑える必要があります。<br>
+                一般的には、負荷率50％程度で使用するのが標準的です。<br>
+                重量物を高スピードで移動さえる場合は、負荷率が低めになるシリンダ径を選定して使用します。
             </p>
         </div>
     `;
@@ -552,7 +562,7 @@ function createAllModals() {
             <div class="input-group" data-change-handler="toggleP1LoadInput">
                 <label class="input-label">負荷の入力方法</label>
                 <div class="text-xs space-y-1 mt-1">
-                    <label class="flex items-center"><input type="radio" name="load_input_type" value="weight_friction" checked><span class="pl-1">重量と摩擦係数</span></label>
+                    <label class="flex items-center"><input type="radio" name="load_input_type" value="weight_friction" checked><span class="pl-1">重量とまさつ係数</span></label>
                     <label class="flex items-center"><input type="radio" name="load_input_type" value="value"><span class="pl-1">負荷の値</span></label>
                     <label class="flex items-center"><input type="radio" name="load_input_type" value="rate"><span class="pl-1">負荷率</span></label>
                 </div>
@@ -564,9 +574,14 @@ function createAllModals() {
             <div id="p1-load-value-input" class="hidden">
                  <div class="input-group"><label class="input-label">負荷の値 (Kgf)</label><input type="number" name="load_value" class="input-field" value="20"></div>
             </div>
+            <!-- ★★★ ここから修正 ★★★ -->
             <div id="p1-load-rate-input" class="hidden">
-                 <div class="input-group"><label class="input-label">負荷率 (%)</label><input type="number" name="load_rate" class="input-field" value="50"></div>
+                 <div class="input-group">
+                    <label class="input-label cursor-pointer" data-action="toggleTooltip" data-tooltip-target="#p1-load-rate-tooltip">負荷率 (%) ⓘ</label>
+                    <input type="number" name="load_rate" class="input-field" value="50">
+                 </div>
             </div>
+            <!-- ★★★ ここまで修正 ★★★
             <hr class="my-2">
 
             <div class="input-group" data-change-handler="toggleP1OrificeInput">
@@ -584,7 +599,7 @@ function createAllModals() {
             <div class="input-group"><label class="input-label cursor-pointer" data-action="toggleTooltip" data-tooltip-target="#p1-jis-tooltip">シリンダ内径 (mm) ⓘ</label><input type="number" name="cylinder_diameter" class="input-field" value="50"></div>
             <div class="input-group"><label class="input-label cursor-pointer" data-action="toggleTooltip" data-tooltip-target="#p1-jis-tooltip">ロッド径 (mm) ⓘ</label><input type="number" name="rod_diameter" class="input-field" value="20"></div>
             <div class="input-group"><label class="input-label">ストローク (mm)</label><input type="number" name="stroke" class="input-field" value="300"></div>
-        `, `${jisTooltip('p1-jis-tooltip')}${steelPipeTooltip('p1-steel-pipe-tooltip')}${frictionTooltip('p1-friction-tooltip')}`)}
+        `, `${jisTooltip('p1-jis-tooltip')}${steelPipeTooltip('p1-steel-pipe-tooltip')}${frictionTooltip('p1-friction-tooltip')}${loadRateTooltip('p1-load-rate-tooltip')}`)}
 
          ${createModal('P2', '有効断面積', `
             <div data-change-handler="toggleP2">
@@ -731,13 +746,11 @@ function setupEventListeners() {
                 if (isHidden) {
                     const modalContent = tooltip.closest('.modal-content');
                     if (modalContent) {
-                        // ★★★ ここから修正 ★★★
                         // JSで中央配置のスタイルをすべて設定する
                         const topPosition = modalContent.scrollTop + (modalContent.clientHeight / 2);
                         tooltip.style.top = `${topPosition}px`;
                         tooltip.style.left = '50%';
                         tooltip.style.transform = 'translate(-50%, -50%)';
-                        // ★★★ ここまで修正 ★★★
                     }
                     tooltip.classList.remove('hidden');
                 }
