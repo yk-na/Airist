@@ -232,12 +232,9 @@ function openModal(modalId) {
 function closeModal(modalId) {
     const modal = document.getElementById(`modal-${modalId}`);
     if (modal) {
-        // ★★★ 修正箇所 ★★★
         // モーダルを閉じる際に、表示されている可能性のあるツールチップも隠す
-        const tooltip = modal.querySelector('.tooltip');
-        if (tooltip) {
-            tooltip.classList.add('hidden');
-        }
+        const tooltips = modal.querySelectorAll('.tooltip');
+        tooltips.forEach(tooltip => tooltip.classList.add('hidden'));
         
         const content = modal.querySelector('.modal-content');
         modal.style.opacity = 0;
@@ -389,7 +386,6 @@ function updateSubDisplayScroll() {
     scrollDownIndicator.style.visibility = subDisplayScrollTop < maxScroll ? 'visible' : 'hidden';
 }
 
-// ★★★ 修正箇所 ★★★
 // createModal関数を修正し、ツールチップ用のHTMLを受け取れるようにする
 function createModal(id, title, content, tooltipContent = '') {
     return `
@@ -435,15 +431,35 @@ function createJISTableHTML() {
     return `<h4 class="font-bold text-center mb-2">JIS Bロッド径 (mm)</h4><table class="w-full text-xs">${tableHeader}${tableBody}</table>`;
 }
 
+// ★★★ 機能追加 ★★★
+// 鋼管内径の参照表HTMLを生成するヘルパー関数
+function createSteelPipeTableHTML() {
+    const pipeData = [
+        { call: 6, inner: 6.5 }, { call: 8, inner: 9.2 }, { call: 10, inner: 12.7 },
+        { call: 15, inner: 16.1 }, { call: 20, inner: 21.6 }, { call: 25, inner: 27.6 },
+        { call: 32, inner: 35.7 }, { call: 40, inner: 41.6 }, { call: 50, inner: 52.9 },
+        { call: 65, inner: 67.9 }, { call: 80, inner: 80.7 }, { call: 90, inner: 93.2 }
+    ];
+    const tableHeader = `<thead><tr><th class="px-2 py-1">呼び径(A)</th><th class="px-2 py-1">内径(mm)</th></tr></thead>`;
+    const tableBody = `<tbody>${pipeData.map(d => `<tr><td class="text-center px-2 py-1">${d.call}</td><td class="text-center px-2 py-1">${d.inner}</td></tr>`).join('')}</tbody>`;
+    return `<h4 class="font-bold text-center mb-2">鋼管内径</h4><table class="w-full text-xs">${tableHeader}${tableBody}</table>`;
+}
+
 
 function createAllModals() {
     const modalContainer = document.getElementById('modal-container');
 
-    // ★★★ 修正箇所 ★★★
-    // P0モーダル用のツールチップHTMLを定義
     const p0TooltipHTML = `
         <div id="p0-jis-tooltip" class="tooltip absolute bg-white p-3 rounded-lg shadow-lg border border-gray-300 z-50 hidden" style="width: 200px; top: 50%; left: 50%; transform: translate(-50%, -50%);">
             ${createJISTableHTML()}
+        </div>
+    `;
+    
+    // ★★★ 機能追加 ★★★
+    // 各モーダル用の鋼管ツールチップHTMLを定義
+    const steelPipeTooltip = (id) => `
+        <div id="${id}" class="tooltip absolute bg-white p-3 rounded-lg shadow-lg border border-gray-300 z-50 hidden" style="width: 200px; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+            ${createSteelPipeTableHTML()}
         </div>
     `;
 
@@ -519,7 +535,7 @@ function createAllModals() {
             </div>
             <div id="p1-pipe-volume-calculate-inputs" class="hidden space-y-3">
                 <div class="input-group"><label class="input-label">配管の長さ (m)</label><input type="number" name="p1_pipe_length" class="input-field" value="1"></div>
-                <div class="input-group"><label class="input-label">配管の内径 (mm)</label><input type="number" name="p1_pipe_diameter" class="input-field" value="8"></div>
+                <div class="input-group"><label class="input-label cursor-pointer" data-action="toggleTooltip" data-tooltip-target="#p1-steel-pipe-tooltip">配管の内径 (mm) ⓘ</label><input type="number" name="p1_pipe_diameter" class="input-field" value="8"></div>
             </div>
             <hr class="my-2">
             
@@ -558,7 +574,7 @@ function createAllModals() {
             <div class="input-group"><label class="input-label">シリンダ内径 (mm)</label><input type="number" name="cylinder_diameter" class="input-field" value="50"></div>
             <div class="input-group"><label class="input-label">ロッド径 (mm)</label><input type="number" name="rod_diameter" class="input-field" value="20"></div>
             <div class="input-group"><label class="input-label">ストローク (mm)</label><input type="number" name="stroke" class="input-field" value="300"></div>
-        `)}
+        `, steelPipeTooltip('p1-steel-pipe-tooltip'))}
 
          ${createModal('P2', '有効断面積', `
             <div data-change-handler="toggleP2">
@@ -569,17 +585,17 @@ function createAllModals() {
             <div id="p2-pipe-inputs">
                 <div class="input-group"><label class="input-label">配管長さ (m)</label><input type="number" name="pipe_length" class="input-field" value="3"></div>
                 <div class="input-group"><label class="input-label">配管種類</label><select name="pipe_type" class="input-field"><option value="steel">鋼管</option><option value="nylon">ナイロンチューブ</option></select></div>
-                <div class="input-group"><label class="input-label">配管内径 (mm)</label><input type="number" name="pipe_diameter" class="input-field" value="16.1"></div>
+                <div class="input-group"><label class="input-label cursor-pointer" data-action="toggleTooltip" data-tooltip-target="#p2-steel-pipe-tooltip">配管内径 (mm) ⓘ</label><input type="number" name="pipe_diameter" class="input-field" value="16.1"></div>
             </div>
             <div id="p2-composite-inputs" class="hidden">
                 <div class="input-group"><label class="input-label">各有効断面積 (カンマ区切り)</label><input type="text" name="s_values" class="input-field" value="15,8,20"></div>
             </div>
-        `)}
+        `, steelPipeTooltip('p2-steel-pipe-tooltip'))}
         ${createModal('P3', '空気消費量', `
             ${createPressureInput('pressure', '作動圧力', '0.4', 'pressure_unit')}
             <div class="input-group"><label class="input-label">シリンダの本数</label><input type="number" name="num_cylinders" class="input-field" value="2" data-change-handler="generateCylinders"></div>
             <div id="p3-cylinder-inputs" class="space-y-4"></div>
-        `)}
+        `, steelPipeTooltip('p3-steel-pipe-tooltip'))}
         ${createModal('P4', '流量', `
             <div data-change-handler="toggleP4">
                 <label class="flex items-center"><input type="radio" name="type" value="flow" checked><span class="ml-2">流量</span></label>
@@ -608,8 +624,8 @@ function createAllModals() {
             ${createPressureInput('pressure', '元圧力', '0.7', 'pressure_unit')}
             <div class="input-group"><label class="input-label">流量 (l/min)</label><input type="number" name="flow" class="input-field" value="5000"></div>
             <div class="input-group"><label class="input-label">配管長さ (m)</label><input type="number" name="length" class="input-field" value="30"></div>
-            <div class="input-group"><label class="input-label">配管内径 (mm)</label><input type="number" name="diameter" class="input-field" value="27.6"></div>
-        `)}
+            <div class="input-group"><label class="input-label cursor-pointer" data-action="toggleTooltip" data-tooltip-target="#sp2-steel-pipe-tooltip">配管内径 (mm) ⓘ</label><input type="number" name="diameter" class="input-field" value="27.6"></div>
+        `, steelPipeTooltip('sp2-steel-pipe-tooltip'))}
         ${createModal('SP3', 'タンクへの空気圧の充填', `
             <div data-change-handler="toggleSP3">
                 <label><input type="radio" name="type" value="fill_time_full" checked> 充填完了時間</label><br>
@@ -651,7 +667,7 @@ function generateCylinderInputs(count) {
                 <div class="input-group"><label class="input-label">ストローク (mm)</label><input type="number" name="stroke" class="input-field" value="100"></div>
                 <div class="input-group"><label class="input-label">動作頻度 (回/min)</label><input type="number" name="frequency" class="input-field" value="12"></div>
                 <div class="input-group"><label class="input-label">配管長さ (m)</label><input type="number" name="pipe_length" class="input-field" value="1"></div>
-                <div class="input-group"><label class="input-label">配管内径 (mm)</label><input type="number" name="pipe_diameter" class="input-field" value="6"></div>
+                <div class="input-group"><label class="input-label cursor-pointer" data-action="toggleTooltip" data-tooltip-target="#p3-steel-pipe-tooltip">配管内径 (mm) ⓘ</label><input type="number" name="pipe_diameter" class="input-field" value="6"></div>
             </div>
         `;
     }
@@ -693,7 +709,6 @@ function setupEventListeners() {
         const button = event.target.closest('[data-action]');
         if (!button) return;
 
-        // ★★★ 修正箇所 ★★★
         // ツールチップのクリックは伝播を止めずに特別に処理する
         if (button.dataset.action === 'toggleTooltip') {
             const targetSelector = button.dataset.tooltipTarget;
@@ -810,7 +825,6 @@ function setupEventListeners() {
         });
     }
 
-    // ★★★ 機能追加 ★★★
     // ツールチップの外側をクリックしたときにツールチップを閉じる
     document.addEventListener('click', (event) => {
         const tooltip = document.querySelector('.tooltip:not(.hidden)');
@@ -821,7 +835,6 @@ function setupEventListeners() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // ★★★ 機能追加 ★★★
     // ツールチップ用のCSSを動的に追加
     const style = document.createElement('style');
     style.textContent = `
