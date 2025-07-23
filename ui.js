@@ -26,7 +26,7 @@ const G_CM = 980;
 
 // ★★★ 重要 ★★★
 // Renderにデプロイした後、バックエンドサーバーのURLをここに設定してください。
-const BACKEND_URL = 'https://pkun-backend.onrender.com'; // 例: 'https://your-app-name.onrender.com'
+const BACKEND_URL = '[https://pkun-backend.onrender.com](https://pkun-backend.onrender.com)'; // 例: '[https://your-app-name.onrender.com](https://your-app-name.onrender.com)'
 
 // Sub-display scroll state
 let subDisplayScrollTop = 0;
@@ -273,6 +273,9 @@ async function executeCalculation(functionId) {
         params[key] = value;
     }
 
+    // ★★★ エラー修正箇所 ★★★
+    // バックエンドは常に kgf/cm² での入力を想定しているため、
+    // フロントエンド側でMPaが選択されている場合は、送信前に kgf/cm² に変換します。
     const MPA_TO_KGF = 10.19716;
     const KGF_TO_MPA = 0.0980665;
 
@@ -286,13 +289,13 @@ async function executeCalculation(functionId) {
         'initial_pressure': 'initial_pressure_unit'
     };
     
+    // paramsオブジェクト内の圧力値をループでチェックし、必要に応じて単位を変換します。
     for (const fieldName in pressureFieldMap) {
         if (params[fieldName] && params[fieldName] !== '') {
             const unitFieldName = pressureFieldMap[fieldName];
             if (params[unitFieldName] === 'MPa') {
+                // paramsオブジェクトの値を直接上書きして、MPaからkgf/cm²に変換します。
                 params[fieldName] = parseFloat(params[fieldName]) * MPA_TO_KGF;
-            } else {
-                params[fieldName] = parseFloat(params[fieldName]);
             }
         }
     }
@@ -322,7 +325,8 @@ async function executeCalculation(functionId) {
         });
 
         if (!response.ok) {
-            throw new Error(`サーバーエラー: ${response.status}`);
+            const errorData = await response.json();
+            throw new Error(errorData.error || `サーバーエラー: ${response.status}`);
         }
 
         const result = await response.json();
@@ -330,17 +334,18 @@ async function executeCalculation(functionId) {
         const primaryUnitRadio = form.querySelector('input[name$="_unit"]:checked');
         const primaryUnit = primaryUnitRadio ? primaryUnitRadio.value : 'MPa';
 
+        // バックエンドから返された結果（kgf/cm²）を、ユーザーが選択した単位（MPa）に戻して表示します。
         if (functionId === 'SP2' && result["圧力損失"]) {
-            let valueKgf = parseFloat(result["圧力損失"]);
+            let valueKgc = parseFloat(result["圧力損失"]);
             result["圧力損失"] = primaryUnit === 'MPa' 
-                ? `${(valueKgf * KGF_TO_MPA).toFixed(3)} MPa`
-                : `${valueKgf.toFixed(2)} K/C`;
+                ? `${(valueKgc * KGF_TO_MPA).toFixed(3)} MPa`
+                : `${valueKgc.toFixed(2)} kgf/cm²`;
         }
         if ((functionId === 'SP3' || functionId === 'SP4') && result["T秒後の圧力"]) {
-            let valueKgf = parseFloat(result["T秒後の圧力"]);
+            let valueKgc = parseFloat(result["T秒後の圧力"]);
              result["T秒後の圧力"] = primaryUnit === 'MPa'
-                ? `${(valueKgf * KGF_TO_MPA).toFixed(3)} MPa`
-                : `${valueKgf.toFixed(2)} K/C`;
+                ? `${(valueKgc * KGF_TO_MPA).toFixed(3)} MPa`
+                : `${valueKgc.toFixed(2)} kgf/cm²`;
         }
         
         displayCalculationResult(functionId, result);
@@ -407,7 +412,7 @@ function createPressureInput(name, label, defaultValueMpa, unitName) {
                 <input type="number" name="${name}" class="input-field flex-grow" value="${defaultValueMpa}" step="any">
                 <div class="text-xs pl-2 flex-shrink-0 space-y-1">
                     <label class="flex items-center"><input type="radio" name="${unitName}" value="MPa" checked> <span class="pl-1">MPa</span></label>
-                    <label class="flex items-center"><input type="radio" name="${unitName}" value="K/C"> <span class="pl-1">K/C</span></label>
+                    <label class="flex items-center"><input type="radio" name="${unitName}" value="K/C"> <span class="pl-1">kgf/cm²</span></label>
                 </div>
             </div>
         </div>
@@ -424,8 +429,8 @@ function createAllModals() {
             </div>
             <hr class="my-2">
             ${createPressureInput('pressure', '作動圧力', '0.4', 'pressure_unit')}
-            <div class="input-group"><label class="input-label">シリンダ内径 (MM)</label><input type="number" name="cylinder_diameter" class="input-field" value="63"></div>
-            <div class="input-group"><label class="input-label">ロッド径 (MM)</label><input type="number" name="rod_diameter" class="input-field" value="24"></div>
+            <div class="input-group"><label class="input-label">シリンダ内径 (mm)</label><input type="number" name="cylinder_diameter" class="input-field" value="63"></div>
+            <div class="input-group"><label class="input-label">ロッド径 (mm)</label><input type="number" name="rod_diameter" class="input-field" value="24"></div>
             <hr class="my-2">
             <div class="input-group">
                 <label class="input-label">出力単位</label>
@@ -439,23 +444,37 @@ function createAllModals() {
                 <div class="input-group"><label class="input-label">摩擦係数</label><input type="number" name="load_friction" class="input-field" value="0.3"></div>
             </div>
         `)}
+        
         ${createModal('P1', '運動（動作時間・必要S）', `
             <div data-change-handler="toggleP1">
                 <label class="flex items-center"><input type="radio" name="type" value="time" checked><span class="ml-2">動作時間を計算</span></label>
                 <label class="flex items-center"><input type="radio" name="type" value="necessary_s"><span class="ml-2">必要有効断面積を計算</span></label>
             </div>
-            <div>
+            <div class="mt-2">
                 <label class="flex items-center"><input type="radio" name="direction" value="push" checked><span class="ml-2">PUSH</span></label>
                 <label class="flex items-center"><input type="radio" name="direction" value="pull"><span class="ml-2">PULL</span></label>
             </div>
             <hr class="my-2">
+            
             <div id="p1-time-inputs">
                 <div class="input-group"><label class="input-label">合成有効断面積S (mm²)</label><input type="number" name="s_composite" class="input-field" value="5.68"></div>
-                <div class="input-group"><label class="input-label">配管容積 ΔV (cm³)</label><input type="number" name="pipe_volume" class="input-field" value="50"></div>
             </div>
             <div id="p1-s-inputs" class="hidden">
                 <div class="input-group"><label class="input-label">目標動作時間 (sec)</label><input type="number" name="time" class="input-field" value="0.8"></div>
             </div>
+
+            <div data-change-handler="toggleP1PipeInput">
+                <label class="flex items-center"><input type="radio" name="pipe_volume_input_type" value="direct" checked><span class="ml-2">配管容積を直接入力</span></label>
+                <label class="flex items-center"><input type="radio" name="pipe_volume_input_type" value="calculate"><span class="ml-2">配管の内径と長さから計算</span></label>
+            </div>
+            <div id="p1-pipe-volume-direct-inputs">
+                 <div class="input-group"><label class="input-label">配管容積 ΔV (cm³)</label><input type="number" name="pipe_volume" class="input-field" value="50"></div>
+            </div>
+            <div id="p1-pipe-volume-calculate-inputs" class="hidden space-y-3">
+                <div class="input-group"><label class="input-label">配管の長さ (m)</label><input type="number" name="p1_pipe_length" class="input-field" value="1"></div>
+                <div class="input-group"><label class="input-label">配管の内径 (mm)</label><input type="number" name="p1_pipe_diameter" class="input-field" value="8"></div>
+            </div>
+            
             ${createPressureInput('pressure', '作動圧力', '0.5', 'pressure_unit')}
             <div class="input-group"><label class="input-label">シリンダ内径 (mm)</label><input type="number" name="cylinder_diameter" class="input-field" value="50"></div>
             <div class="input-group"><label class="input-label">ロッド径 (mm)</label><input type="number" name="rod_diameter" class="input-field" value="20"></div>
@@ -463,6 +482,7 @@ function createAllModals() {
             <div class="input-group"><label class="input-label">負荷重量 (Kgf)</label><input type="number" name="load_weight" class="input-field" value="49"></div>
             <div class="input-group"><label class="input-label">摩擦係数</label><input type="number" name="load_friction" class="input-field" value="0.4"></div>
         `)}
+
          ${createModal('P2', '有効断面積', `
             <div data-change-handler="toggleP2">
                 <label class="flex items-center"><input type="radio" name="type" value="pipe" checked><span class="ml-2">配管のS</span></label>
@@ -635,6 +655,11 @@ function setupEventListeners() {
                 case 'toggleP1':
                     toggleVis('p1-time-inputs', element.value === 'time');
                     toggleVis('p1-s-inputs', element.value === 'necessary_s');
+                    break;
+                // ★★★ 機能追加 ★★★
+                case 'toggleP1PipeInput':
+                    toggleVis('p1-pipe-volume-direct-inputs', element.value === 'direct');
+                    toggleVis('p1-pipe-volume-calculate-inputs', element.value === 'calculate');
                     break;
                 case 'toggleP2':
                     toggleVis('p2-pipe-inputs', element.value === 'pipe');
