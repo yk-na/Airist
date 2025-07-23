@@ -273,6 +273,7 @@ async function executeCalculation(functionId) {
         params[key] = value;
     }
 
+    const MPA_TO_KGF = 10.19716;
     const KGF_TO_MPA = 0.0980665;
 
     const pressureFieldMap = {
@@ -289,9 +290,7 @@ async function executeCalculation(functionId) {
         if (params[fieldName] && params[fieldName] !== '') {
             const unitFieldName = pressureFieldMap[fieldName];
             if (params[unitFieldName] === 'MPa') {
-                // MPaの場合は何もしない（バックエンドでK/Cに変換されることを想定しない）
-            } else { // K/Cの場合
-                // K/Cの値をそのまま送信
+                params[fieldName] = parseFloat(params[fieldName]) * MPA_TO_KGF;
             }
         }
     }
@@ -321,7 +320,8 @@ async function executeCalculation(functionId) {
         });
 
         if (!response.ok) {
-            throw new Error(`サーバーエラー: ${response.status}`);
+            const errorData = await response.json();
+            throw new Error(errorData.error || `サーバーエラー: ${response.status}`);
         }
 
         const result = await response.json();
@@ -450,14 +450,27 @@ function createAllModals() {
             </div>
             <hr class="my-2">
             
-            <div id="p1-time-inputs">
-                <div class="input-group"><label class="input-label">合成有効断面積S (mm²)</label><input type="number" name="s_composite" class="input-field" value="5.68"></div>
+            <!-- ★★★ 機能追加 ★★★ -->
+            <div id="p1-time-inputs-container">
+                <div data-change-handler="toggleP1SInput">
+                    <label class="flex items-center"><input type="radio" name="s_input_type" value="direct" checked><span class="ml-2">合成有効断面積を直接入力</span></label>
+                    <label class="flex items-center"><input type="radio" name="s_input_type" value="calculate"><span class="ml-2">各機器のSから計算</span></label>
+                </div>
+                <div id="p1-s-direct-input">
+                    <div class="input-group"><label class="input-label">合成有効断面積S (mm²)</label><input type="number" name="s_composite" class="input-field" value="5.68"></div>
+                </div>
+                <div id="p1-s-calculate-inputs" class="hidden space-y-3">
+                    <div class="input-group"><label class="input-label">バルブのS (mm²)</label><input type="number" name="valve_s" class="input-field" value="10"></div>
+                    <div class="input-group"><label class="input-label">スピコンのS (mm²)</label><input type="number" name="spicon_s" class="input-field" value="8"></div>
+                    <div class="input-group"><label class="input-label">サイレンサのS (mm²)</label><input type="number" name="silencer_s" class="input-field" value="15"></div>
+                    <div class="input-group"><label class="input-label">配管種類</label><select name="p1_pipe_type" class="input-field"><option value="nylon">ナイロンチューブ</option><option value="steel">鋼管</option></select></div>
+                </div>
             </div>
+            
             <div id="p1-s-inputs" class="hidden">
                 <div class="input-group"><label class="input-label">目標動作時間 (sec)</label><input type="number" name="time" class="input-field" value="0.8"></div>
             </div>
 
-            <!-- ★★★ 機能追加 ★★★ -->
             <div data-change-handler="toggleP1PipeInput">
                 <label class="flex items-center"><input type="radio" name="pipe_volume_input_type" value="direct" checked><span class="ml-2">配管容積を直接入力</span></label>
                 <label class="flex items-center"><input type="radio" name="pipe_volume_input_type" value="calculate"><span class="ml-2">配管の内径と長さから計算</span></label>
@@ -648,13 +661,17 @@ function setupEventListeners() {
                     toggleVis('p0-load-inputs', element.value === 'load_rate');
                     break;
                 case 'toggleP1':
-                    toggleVis('p1-time-inputs', element.value === 'time');
+                    toggleVis('p1-time-inputs-container', element.value === 'time');
                     toggleVis('p1-s-inputs', element.value === 'necessary_s');
                     break;
-                // ★★★ 機能追加 ★★★
                 case 'toggleP1PipeInput':
                     toggleVis('p1-pipe-volume-direct-inputs', element.value === 'direct');
                     toggleVis('p1-pipe-volume-calculate-inputs', element.value === 'calculate');
+                    break;
+                // ★★★ 機能追加 ★★★
+                case 'toggleP1SInput':
+                    toggleVis('p1-s-direct-input', element.value === 'direct');
+                    toggleVis('p1-s-calculate-inputs', element.value === 'calculate');
                     break;
                 case 'toggleP2':
                     toggleVis('p2-pipe-inputs', element.value === 'pipe');
