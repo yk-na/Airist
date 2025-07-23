@@ -448,18 +448,30 @@ function createSteelPipeTableHTML() {
 function createAllModals() {
     const modalContainer = document.getElementById('modal-container');
 
-    // ★★★ 修正箇所 ★★★
+    // ★★★ ここから修正 ★★★
     // ツールチップHTMLを生成する関数を定義
+    // HTML内のstyle属性から left と transform を削除
     const jisTooltip = (id) => `
-        <div id="${id}" class="tooltip absolute bg-white p-3 rounded-lg shadow-lg border border-gray-300 z-50 hidden" style="width: 200px; left: 50%; transform: translate(-50%, -50%);">
+        <div id="${id}" class="tooltip absolute bg-white p-3 rounded-lg shadow-lg border border-gray-300 z-50 hidden" style="width: 200px;">
             ${createJISTableHTML()}
         </div>
     `;
     const steelPipeTooltip = (id) => `
-        <div id="${id}" class="tooltip absolute bg-white p-3 rounded-lg shadow-lg border border-gray-300 z-50 hidden" style="width: 200px; left: 50%; transform: translate(-50%, -50%);">
+        <div id="${id}" class="tooltip absolute bg-white p-3 rounded-lg shadow-lg border border-gray-300 z-50 hidden" style="width: 200px;">
             ${createSteelPipeTableHTML()}
         </div>
     `;
+    const frictionTooltip = (id) => `
+        <div id="${id}" class="tooltip absolute bg-white p-4 rounded-lg shadow-lg border border-gray-300 z-50 hidden" style="width: 280px;">
+            <h4 class="font-bold text-center mb-2">摩擦係数について</h4>
+            <p class="text-xs text-left leading-relaxed">
+                ころがりの場合 U=0.1<br>
+                すべりの場合 U=0.4<br>
+                上方向動作の場合は U=1 に相当します。
+            </p>
+        </div>
+    `;
+    // ★★★ ここまで修正 ★★★
 
     modalContainer.innerHTML = `
         ${createModal('P0', 'シリンダ出力と負荷率', `
@@ -489,9 +501,9 @@ function createAllModals() {
             </div>
             <div id="p0-load-inputs" class="space-y-3 pl-5 hidden">
                 <div class="input-group"><label class="input-label">負荷の重量 (Kgf)</label><input type="number" name="load_weight" class="input-field" value="200"></div>
-                <div class="input-group"><label class="input-label">摩擦係数</label><input type="number" name="load_friction" class="input-field" value="0.3"></div>
+                <div class="input-group"><label class="input-label cursor-pointer" data-action="toggleTooltip" data-tooltip-target="#p0-friction-tooltip">摩擦係数 ⓘ</label><input type="number" name="load_friction" class="input-field" value="0.3"></div>
             </div>
-        `, jisTooltip('p0-jis-tooltip'))}
+        `, `${jisTooltip('p0-jis-tooltip')}${frictionTooltip('p0-friction-tooltip')}`)}
         
         ${createModal('P1', '運動（動作時間・必要S）', `
             <div data-change-handler="toggleP1">
@@ -547,7 +559,7 @@ function createAllModals() {
             </div>
             <div id="p1-load-weight-friction-inputs" class="space-y-3">
                 <div class="input-group"><label class="input-label">負荷重量 (Kgf)</label><input type="number" name="load_weight" class="input-field" value="49"></div>
-                <div class="input-group"><label class="input-label">摩擦係数</label><input type="number" name="load_friction" class="input-field" value="0.4"></div>
+                <div class="input-group"><label class="input-label cursor-pointer" data-action="toggleTooltip" data-tooltip-target="#p1-friction-tooltip">摩擦係数 ⓘ</label><input type="number" name="load_friction" class="input-field" value="0.4"></div>
             </div>
             <div id="p1-load-value-input" class="hidden">
                  <div class="input-group"><label class="input-label">負荷の値 (Kgf)</label><input type="number" name="load_value" class="input-field" value="20"></div>
@@ -572,7 +584,7 @@ function createAllModals() {
             <div class="input-group"><label class="input-label cursor-pointer" data-action="toggleTooltip" data-tooltip-target="#p1-jis-tooltip">シリンダ内径 (mm) ⓘ</label><input type="number" name="cylinder_diameter" class="input-field" value="50"></div>
             <div class="input-group"><label class="input-label cursor-pointer" data-action="toggleTooltip" data-tooltip-target="#p1-jis-tooltip">ロッド径 (mm) ⓘ</label><input type="number" name="rod_diameter" class="input-field" value="20"></div>
             <div class="input-group"><label class="input-label">ストローク (mm)</label><input type="number" name="stroke" class="input-field" value="300"></div>
-        `, `${jisTooltip('p1-jis-tooltip')}${steelPipeTooltip('p1-steel-pipe-tooltip')}`)}
+        `, `${jisTooltip('p1-jis-tooltip')}${steelPipeTooltip('p1-steel-pipe-tooltip')}${frictionTooltip('p1-friction-tooltip')}`)}
 
          ${createModal('P2', '有効断面積', `
             <div data-change-handler="toggleP2">
@@ -717,12 +729,15 @@ function setupEventListeners() {
                 document.querySelectorAll('.tooltip').forEach(tt => tt.classList.add('hidden'));
                 // 対象のツールチップが表示されていなかった場合、表示する
                 if (isHidden) {
-                    // ★★★ 修正箇所 ★★★
-                    // ツールチップ表示時にスクロール位置を考慮して中央に配置
                     const modalContent = tooltip.closest('.modal-content');
                     if (modalContent) {
+                        // ★★★ ここから修正 ★★★
+                        // JSで中央配置のスタイルをすべて設定する
                         const topPosition = modalContent.scrollTop + (modalContent.clientHeight / 2);
                         tooltip.style.top = `${topPosition}px`;
+                        tooltip.style.left = '50%';
+                        tooltip.style.transform = 'translate(-50%, -50%)';
+                        // ★★★ ここまで修正 ★★★
                     }
                     tooltip.classList.remove('hidden');
                 }
