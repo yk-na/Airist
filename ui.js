@@ -232,6 +232,13 @@ function openModal(modalId) {
 function closeModal(modalId) {
     const modal = document.getElementById(`modal-${modalId}`);
     if (modal) {
+        // ★★★ 修正箇所 ★★★
+        // モーダルを閉じる際に、表示されている可能性のあるツールチップも隠す
+        const tooltip = modal.querySelector('.tooltip');
+        if (tooltip) {
+            tooltip.classList.add('hidden');
+        }
+        
         const content = modal.querySelector('.modal-content');
         modal.style.opacity = 0;
         content.style.opacity = 0;
@@ -382,10 +389,12 @@ function updateSubDisplayScroll() {
     scrollDownIndicator.style.visibility = subDisplayScrollTop < maxScroll ? 'visible' : 'hidden';
 }
 
-function createModal(id, title, content) {
+// ★★★ 修正箇所 ★★★
+// createModal関数を修正し、ツールチップ用のHTMLを受け取れるようにする
+function createModal(id, title, content, tooltipContent = '') {
     return `
         <div id="modal-${id}" class="modal absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden">
-            <div class="modal-content bg-gray-100 rounded-lg shadow-xl w-full max-w-sm p-6 border-2 border-gray-300">
+            <div class="modal-content relative bg-gray-100 rounded-lg shadow-xl w-full max-w-sm p-6 border-2 border-gray-300">
                 <form id="form-${id}">
                     <h2 class="text-xl font-bold mb-4 text-gray-800">${title}</h2>
                     <div class="space-y-3 text-sm">${content}</div>
@@ -394,6 +403,7 @@ function createModal(id, title, content) {
                         <button type="button" data-action="executeCalculation" data-modal-id="${id}" class="key bg-blue-600 text-white px-4 py-2 font-bold">計算</button>
                     </div>
                 </form>
+                ${tooltipContent}
             </div>
         </div>`;
 }
@@ -413,53 +423,30 @@ function createPressureInput(name, label, defaultValueMpa, unitName) {
     `;
 }
 
-// ★★★ 機能追加 ★★★
-// JIS Bロッド径の参照表ツールチップを表示する関数
-function showJISTooltip(event) {
-    // 既存のツールチップがあれば削除
-    const existingTooltip = document.querySelector('.jis-tooltip');
-    if (existingTooltip) {
-        existingTooltip.remove();
-    }
-
-    event.stopPropagation(); // 親要素へのイベント伝播を停止
-
+// JIS Bロッド径の参照表HTMLを生成するヘルパー関数
+function createJISTableHTML() {
     const jisData = [
         { bore: 40, rod: 16 }, { bore: 50, rod: 20 }, { bore: 63, rod: 20 },
         { bore: 80, rod: 25 }, { bore: 100, rod: 32 }, { bore: 125, rod: 36 },
         { bore: 140, rod: 36 }, { bore: 160, rod: 40 }, { bore: 180, rod: 45 }
     ];
-
     const tableHeader = `<thead><tr><th class="px-2 py-1">シリンダ内径</th><th class="px-2 py-1">ロッド径</th></tr></thead>`;
     const tableBody = `<tbody>${jisData.map(d => `<tr><td class="text-center px-2 py-1">${d.bore}</td><td class="text-center px-2 py-1">${d.rod}</td></tr>`).join('')}</tbody>`;
-    const tableHtml = `<h4 class="font-bold text-center mb-2">JIS Bロッド径 (mm)</h4><table class="w-full text-xs">${tableHeader}${tableBody}</table>`;
-
-    const tooltip = document.createElement('div');
-    tooltip.className = 'jis-tooltip absolute bg-white p-3 rounded-lg shadow-lg border border-gray-300 z-50';
-    tooltip.innerHTML = tableHtml;
-
-    const target = event.currentTarget;
-    const modalContent = target.closest('.modal-content');
-    modalContent.appendChild(tooltip);
-
-    const targetRect = target.getBoundingClientRect();
-    const modalRect = modalContent.getBoundingClientRect();
-
-    tooltip.style.left = `${targetRect.left - modalRect.left}px`;
-    tooltip.style.top = `${targetRect.bottom - modalRect.top + 5}px`;
-
-    // どこかをクリックしたらツールチップを閉じる
-    const closeTooltip = () => {
-        tooltip.remove();
-        document.removeEventListener('click', closeTooltip);
-    };
-    // 少し遅延させてからイベントリスナーを登録し、ツールチップ表示直後のクリックで閉じないようにする
-    setTimeout(() => document.addEventListener('click', closeTooltip), 10);
+    return `<h4 class="font-bold text-center mb-2">JIS Bロッド径 (mm)</h4><table class="w-full text-xs">${tableHeader}${tableBody}</table>`;
 }
 
 
 function createAllModals() {
     const modalContainer = document.getElementById('modal-container');
+
+    // ★★★ 修正箇所 ★★★
+    // P0モーダル用のツールチップHTMLを定義
+    const p0TooltipHTML = `
+        <div id="p0-jis-tooltip" class="tooltip absolute bg-white p-3 rounded-lg shadow-lg border border-gray-300 z-50 hidden" style="width: 200px; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+            ${createJISTableHTML()}
+        </div>
+    `;
+
     modalContainer.innerHTML = `
         ${createModal('P0', 'シリンダ出力と負荷率', `
             <div data-change-handler="toggleP0">
@@ -468,15 +455,16 @@ function createAllModals() {
             </div>
             <hr class="my-2">
             ${createPressureInput('pressure', '作動圧力', '0.4', 'pressure_unit')}
-            <!-- ★★★ 機能追加 ★★★ -->
+            
             <div class="input-group">
-                <label class="input-label cursor-pointer" data-action="showJISTooltip">シリンダ内径 (mm) ⓘ</label>
+                <label class="input-label cursor-pointer" data-action="toggleTooltip" data-tooltip-target="#p0-jis-tooltip">シリンダ内径 (mm) ⓘ</label>
                 <input type="number" name="cylinder_diameter" class="input-field" value="63">
             </div>
             <div class="input-group">
-                <label class="input-label cursor-pointer" data-action="showJISTooltip">ロッド径 (mm) ⓘ</label>
+                <label class="input-label cursor-pointer" data-action="toggleTooltip" data-tooltip-target="#p0-jis-tooltip">ロッド径 (mm) ⓘ</label>
                 <input type="number" name="rod_diameter" class="input-field" value="24">
             </div>
+
             <hr class="my-2">
             <div class="input-group">
                 <label class="input-label">出力単位</label>
@@ -489,7 +477,7 @@ function createAllModals() {
                 <div class="input-group"><label class="input-label">負荷の重量 (Kgf)</label><input type="number" name="load_weight" class="input-field" value="200"></div>
                 <div class="input-group"><label class="input-label">摩擦係数</label><input type="number" name="load_friction" class="input-field" value="0.3"></div>
             </div>
-        `)}
+        `, p0TooltipHTML)}
         
         ${createModal('P1', '運動（動作時間・必要S）', `
             <div data-change-handler="toggleP1">
@@ -705,6 +693,23 @@ function setupEventListeners() {
         const button = event.target.closest('[data-action]');
         if (!button) return;
 
+        // ★★★ 修正箇所 ★★★
+        // ツールチップのクリックは伝播を止めずに特別に処理する
+        if (button.dataset.action === 'toggleTooltip') {
+            const targetSelector = button.dataset.tooltipTarget;
+            const tooltip = document.querySelector(targetSelector);
+            if (tooltip) {
+                const isHidden = tooltip.classList.contains('hidden');
+                // すべてのツールチップを一旦隠す
+                document.querySelectorAll('.tooltip').forEach(tt => tt.classList.add('hidden'));
+                // 対象のツールチップが表示されていなかった場合、表示する
+                if (isHidden) {
+                    tooltip.classList.remove('hidden');
+                }
+            }
+            return;
+        }
+
         event.stopPropagation();
 
         const { action, value, modalId } = button.dataset;
@@ -758,7 +763,6 @@ function setupEventListeners() {
                     toggleVis('p1-load-value-input', element.value === 'value');
                     toggleVis('p1-load-rate-input', element.value === 'rate');
                     break;
-                // ★★★ 機能追加 ★★★
                 case 'toggleP1OrificeInput':
                     toggleVis('p1-orifice-input', element.value === 'yes');
                     break;
@@ -805,9 +809,29 @@ function setupEventListeners() {
             }
         });
     }
+
+    // ★★★ 機能追加 ★★★
+    // ツールチップの外側をクリックしたときにツールチップを閉じる
+    document.addEventListener('click', (event) => {
+        const tooltip = document.querySelector('.tooltip:not(.hidden)');
+        if (tooltip && !tooltip.contains(event.target) && !event.target.closest('[data-action="toggleTooltip"]')) {
+            tooltip.classList.add('hidden');
+        }
+    });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // ★★★ 機能追加 ★★★
+    // ツールチップ用のCSSを動的に追加
+    const style = document.createElement('style');
+    style.textContent = `
+        .tooltip table, .tooltip th, .tooltip td {
+            border: 1px solid #d1d5db; /* border-gray-300 */
+            border-collapse: collapse;
+        }
+    `;
+    document.head.appendChild(style);
+
     createAllModals();
     generateCylinderInputs(2);
     renderDisplayWithCursor();
