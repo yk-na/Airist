@@ -448,7 +448,6 @@ function createSteelPipeTableHTML() {
 function createAllModals() {
     const modalContainer = document.getElementById('modal-container');
 
-    // ★★★ ここから修正 ★★★
     // ツールチップHTMLを生成する関数を定義
     // HTML内のstyle属性から left と transform を削除
     const jisTooltip = (id) => `
@@ -471,7 +470,6 @@ function createAllModals() {
             </p>
         </div>
     `;
-    // ★★★ ここから修正 ★★★
     const loadRateTooltip = (id) => `
         <div id="${id}" class="tooltip absolute bg-white p-4 rounded-lg shadow-lg border border-gray-300 z-50 hidden" style="width: 280px;">
             <h4 class="font-bold text-center mb-2">負荷率について</h4>
@@ -482,7 +480,6 @@ function createAllModals() {
             </p>
         </div>
     `;
-    // ★★★ ここまで修正 ★★★
 
     modalContainer.innerHTML = `
         ${createModal('P0', 'シリンダ出力と負荷率', `
@@ -576,7 +573,10 @@ function createAllModals() {
                  <div class="input-group"><label class="input-label">負荷の値 (Kgf)</label><input type="number" name="load_value" class="input-field" value="20"></div>
             </div>
             <div id="p1-load-rate-input" class="hidden">
-              	 <div class="input-group"><label class="input-label cursor-pointer" data-action="toggleTooltip" data-tooltip-target="#p1-load-rate-tooltip">負荷率 (%) ⓘ</label><input type="number" name="load_friction" class="input-field" value="0.4"></div>
+                 <div class="input-group">
+                    <label class="input-label cursor-pointer" data-action="toggleTooltip" data-tooltip-target="#p1-load-rate-tooltip">負荷率 (%) ⓘ</label>
+                    <input type="number" name="load_rate" class="input-field" value="50">
+                 </div>
             </div>
             <hr class="my-2">
 
@@ -595,7 +595,7 @@ function createAllModals() {
             <div class="input-group"><label class="input-label cursor-pointer" data-action="toggleTooltip" data-tooltip-target="#p1-jis-tooltip">シリンダ内径 (mm) ⓘ</label><input type="number" name="cylinder_diameter" class="input-field" value="50"></div>
             <div class="input-group"><label class="input-label cursor-pointer" data-action="toggleTooltip" data-tooltip-target="#p1-jis-tooltip">ロッド径 (mm) ⓘ</label><input type="number" name="rod_diameter" class="input-field" value="20"></div>
             <div class="input-group"><label class="input-label">ストローク (mm)</label><input type="number" name="stroke" class="input-field" value="300"></div>
-        `, `${jisTooltip('p1-jis-tooltip')}${steelPipeTooltip('p1-steel-pipe-tooltip')}${frictionTooltip('p1-friction-tooltip')}`)}
+        `, `${jisTooltip('p1-jis-tooltip')}${steelPipeTooltip('p1-steel-pipe-tooltip')}${frictionTooltip('p1-friction-tooltip')}${loadRateTooltip('p1-load-rate-tooltip')}`)}
 
          ${createModal('P2', '有効断面積', `
             <div data-change-handler="toggleP2">
@@ -742,13 +742,11 @@ function setupEventListeners() {
                 if (isHidden) {
                     const modalContent = tooltip.closest('.modal-content');
                     if (modalContent) {
-                        // ★★★ ここから修正 ★★★
                         // JSで中央配置のスタイルをすべて設定する
                         const topPosition = modalContent.scrollTop + (modalContent.clientHeight / 2);
                         tooltip.style.top = `${topPosition}px`;
                         tooltip.style.left = '50%';
                         tooltip.style.transform = 'translate(-50%, -50%)';
-                        // ★★★ ここまで修正 ★★★
                     }
                     tooltip.classList.remove('hidden');
                 }
