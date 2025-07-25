@@ -232,14 +232,7 @@ function openModal(modalId) {
 function closeModal(modalId) {
     const modal = document.getElementById(`modal-${modalId}`);
     if (modal) {
-        // ▼▼▼ 修正点: モーダルを閉じる際にエラーメッセージをクリア ▼▼▼
-        const errorContainer = document.getElementById(`modal-error-${modalId}`);
-        if (errorContainer) {
-            errorContainer.classList.add('hidden');
-            errorContainer.textContent = '';
-        }
-        // ▲▲▲ 修正ここまで ▲▲▲
-
+        // モーダルを閉じる際に、表示されている可能性のあるツールチップも隠す
         const tooltips = modal.querySelectorAll('.tooltip');
         tooltips.forEach(tooltip => tooltip.classList.add('hidden'));
         
@@ -278,14 +271,6 @@ function handleUnitChange(radio) {
 
 async function executeCalculation(functionId) {
     const form = document.getElementById(`form-${functionId}`);
-    // ▼▼▼ 修正点: エラー表示用のコンテナを取得 ▼▼▼
-    const errorContainer = document.getElementById(`modal-error-${functionId}`);
-    
-    // 以前のエラーをクリア
-    errorContainer.classList.add('hidden');
-    errorContainer.textContent = '';
-    // ▲▲▲ 修正ここまで ▲▲▲
-
     const formData = new FormData(form);
     const params = {};
     for (let [key, value] of formData.entries()) {
@@ -365,10 +350,7 @@ async function executeCalculation(functionId) {
         closeModal(functionId);
     } catch (e) {
         console.error("Calculation Error in " + functionId, e);
-        // ▼▼▼ 修正点: エラーをサブディスプレイではなくモーダル内に表示 ▼▼▼
-        errorContainer.textContent = e.message;
-        errorContainer.classList.remove('hidden');
-        // ▲▲▲ 修正ここまで ▲▲▲
+        updateSubDisplay("計算エラー: " + e.message, true);
     }
 }
 
@@ -406,16 +388,11 @@ function updateSubDisplayScroll() {
 
 // createModal関数を修正し、ツールチップ用のHTMLを受け取れるようにする
 function createModal(id, title, content, tooltipContent = '') {
-    // ▼▼▼ 修正点: モーダルの表示位置とエラーメッセージ用コンテナの追加 ▼▼▼
     return `
-        <div id="modal-${id}" class="modal absolute inset-0 bg-black bg-opacity-60 flex items-end justify-center p-4 hidden">
+        <div id="modal-${id}" class="modal absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden">
             <div class="modal-content relative bg-gray-100 rounded-lg shadow-xl w-full max-w-sm p-6 border-2 border-gray-300">
                 <form id="form-${id}">
                     <h2 class="text-xl font-bold mb-4 text-gray-800">${title}</h2>
-                    
-                    <!-- エラーメッセージ表示用のコンテナを追加 -->
-                    <div id="modal-error-${id}" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded-md mb-4 text-sm"></div>
-
                     <div class="space-y-3 text-sm">${content}</div>
                     <div class="mt-6 flex justify-end space-x-3">
                         <button type="button" data-action="closeModal" data-modal-id="${id}" class="key bg-gray-300 text-gray-800 px-4 py-2 font-medium">キャンセル</button>
@@ -425,7 +402,6 @@ function createModal(id, title, content, tooltipContent = '') {
                 ${tooltipContent}
             </div>
         </div>`;
-    // ▲▲▲ 修正ここまで ▲▲▲
 }
 
 function createPressureInput(name, label, defaultValueMpa, unitName) {
@@ -905,6 +881,3 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners(); // Attach all event listeners
 });
 window.addEventListener('resize', adjustAppScale);
-" in the document above. I am asking for a change to this selected code.
-I have a request:
-モーダル画面が出ているとき、サブディスプレイのエラーメッセージが見えないので、機能のモーダル画面は、サブディスプレイに掛からないサイズに変更できま
