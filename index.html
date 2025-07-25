@@ -84,7 +84,8 @@
         }
         .modal-content {
             transition: all 0.2s ease-out;
-            max-height: 80vh;
+            /* ▼▼▼ 修正点: モーダルの最大高さを設定 ▼▼▼ */
+            max-height: 600px;
             overflow-y: auto;
         }
         .modal.hidden {
@@ -120,7 +121,6 @@
             font-family: 'Montserrat', sans-serif;
         }
 
-        /* ▼▼▼ ここから変更箇所 ▼▼▼ */
         /* 色を滑らかに変化させるためのアニメーションを定義 */
         @keyframes smoothColorChange {
             0%   { color: #e74c3c; } /* 赤 */
@@ -136,7 +136,6 @@
         #feedback-link {
             animation: smoothColorChange 9s linear infinite;
         }
-        /* ▲▲▲ ここまでが変更箇所 ▲▲▲ */
     </style>
 </head>
 <body class="m-0 p-0">
@@ -146,7 +145,6 @@
         <div id="app-container" class="iphone-container flex flex-col">
             
             <div class="h-12 flex-shrink-0 flex items-center justify-end px-5">
-                <!-- ▼▼▼ style属性から color 指定のみを削除しました ▼▼▼ -->
                 <a href="#" id="feedback-link" class="logo-font font-extrabold tracking-wide" style="text-decoration: underline;">取扱の注意点、要望はこちら</a>
             </div>
 
