@@ -84,7 +84,6 @@
         }
         .modal-content {
             transition: all 0.2s ease-out;
-            /* ▼▼▼ 修正点: モーダルの最大高さを設定 ▼▼▼ */
             max-height: 600px;
             overflow-y: auto;
         }
@@ -95,6 +94,7 @@
         .modal.hidden .modal-content { opacity: 0; transform: translateY(20px) scale(0.95); }
         .input-group {
             margin-bottom: 0.75rem;
+            position: relative; /* For tooltip positioning */
         }
         .input-label {
             display: block;
