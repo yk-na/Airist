@@ -799,7 +799,7 @@ function createAllModals() {
                 <label class="flex items-center"><input type="radio" name="type" value="load_rate"><span class="ml-2">負荷率も計算</span></label>
             </div>
             <hr class="my-2">
-            ${createPressureInput('pressure', '作動圧力', '0.4', 'pressure_unit', 'required|min:0.2|max:0.99', 'required|min:2|max:9.99')}
+            ${createPressureInput('pressure', '作動圧力', '0.4', 'pressure_unit', 'required|min:0.02|max:0.99', 'required|min:0.2|max:9.99')}
             
             <div class="input-group">
                 <label class="input-label cursor-pointer" data-action="toggleTooltip" data-tooltip-target="#p0-jis-tooltip">シリンダ内径 (mm) ⓘ</label>
@@ -909,7 +909,7 @@ function createAllModals() {
                  ${createValidatedInput('orifice_diameter', 'オリフィス径 (mm)', '正の数', '4', 'required|min:0.1')}
             </div>
 
-            ${createPressureInput('pressure', '作動圧力', '0.5', 'pressure_unit', 'required|min:0.2|max:0.99', 'required|min:2|max:9.99')}
+            ${createPressureInput('pressure', '作動圧力', '0.5', 'pressure_unit', 'required|min:0.02|max:0.99', 'required|min:0.2|max:9.99')}
             ${createValidatedInput('cylinder_diameter', 'シリンダ内径 (mm) ⓘ', '正の数', '50', 'required|min:1', '#p1-jis-tooltip')}
             ${createValidatedInput('rod_diameter', 'ロッド径 (mm) ⓘ', '内径未満', '20', 'required|min:1|lessThan:cylinder_diameter', '#p1-jis-tooltip')}
             ${createValidatedInput('stroke', 'ストローク (mm)', '正の数', '300', 'required|min:1')}
@@ -935,7 +935,7 @@ function createAllModals() {
             </div>
         `, steelPipeTooltip('p2-steel-pipe-tooltip'))}
         ${createModal('P3', '空気消費量', `
-            ${createPressureInput('pressure', '作動圧力', '0.4', 'pressure_unit', 'required|min:0.2|max:0.99', 'required|min:2|max:9.99')}
+            ${createPressureInput('pressure', '作動圧力', '0.4', 'pressure_unit', 'required|min:0.02|max:0.99', 'required|min:0.2|max:9.99')}
             <div class="input-group">
                 <label class="input-label">シリンダの本数</label>
                 <input type="number" name="num_cylinders" class="input-field" placeholder="1以上の整数" value="2" data-change-handler="generateCylinders" data-validate="required|min:1|integer">
@@ -950,12 +950,12 @@ function createAllModals() {
             </div>
             <hr class="my-2">
             <div id="p4-flow-inputs">
-                ${createPressureInput('p1', '1次側圧力', '0.5', 'p1_unit', 'required|min:0.2|max:0.99', 'required|min:2|max:9.99')}
+                ${createPressureInput('p1', '1次側圧力', '0.5', 'p1_unit', 'required|min:0.02|max:0.99', 'required|min:0.2|max:9.99')}
                 ${createPressureInput('p2', '2次側圧力', '0.38', 'p2_unit', 'required|min:0|lessThan:p1', 'required|min:0|lessThan:p1')}
                 ${createValidatedInput('s', '絞り部のS (mm²)', '正の数', '10', 'required|min:0.01')}
             </div>
             <div id="p4-bleed-inputs" class="hidden">
-                ${createPressureInput('p1_bleed', '圧力', '0.3', 'p1_bleed_unit', 'required|min:0.2|max:0.99', 'required|min:2|max:9.99')}
+                ${createPressureInput('p1_bleed', '圧力', '0.3', 'p1_bleed_unit', 'required|min:0.02|max:0.99', 'required|min:0.2|max:9.99')}
                 ${createValidatedInput('nozzle_diameter', 'ノズル内径 (mm)', '正の数', '0.8', 'required|min:0.1')}
             </div>
         `)}
@@ -972,7 +972,7 @@ function createAllModals() {
             ${createValidatedInput('value', '値', '正の数', '5230', 'required|min:0.000001')}
         `)}
         ${createModal('SP2', '配管の圧力損失', `
-            ${createPressureInput('pressure', '元圧力', '0.7', 'pressure_unit', 'required|min:0.2|max:0.99', 'required|min:2|max:9.99')}
+            ${createPressureInput('pressure', '元圧力', '0.7', 'pressure_unit', 'required|min:0.02|max:0.99', 'required|min:0.2|max:9.99')}
             ${createValidatedInput('flow', '流量 (l/min)', '正の数', '5000', 'required|min:1')}
             ${createValidatedInput('length', '配管長さ (m)', '正の数', '30', 'required|min:0.1')}
             ${createValidatedInput('diameter', '配管内径 (mm) ⓘ', '正の数', '27.6', 'required|min:1', '#sp2-steel-pipe-tooltip')}
@@ -984,7 +984,7 @@ function createAllModals() {
                 <label><input type="radio" name="type" value="pressure_after_t"> T秒後の圧力</label>
             </div>
             <hr class="my-2">
-            ${createPressureInput('supply_pressure', '供給圧力', '0.3', 'supply_pressure_unit', 'required|min:0.2|max:0.99', 'required|min:2|max:9.99')}
+            ${createPressureInput('supply_pressure', '供給圧力', '0.3', 'supply_pressure_unit', 'required|min:0.02|max:0.99', 'required|min:0.2|max:9.99')}
             ${createValidatedInput('volume', 'タンク容積 (l)', '正の数', '20', 'required|min:0.1')}
             ${createValidatedInput('s', '絞り部のS (mm²)', '正の数', '12', 'required|min:0.01')}
             <div id="sp3-p-input" class="hidden">${createPressureInput('target_pressure', '目標圧力 P', '0.25', 'target_pressure_unit', 'required|min:0|lessThan:supply_pressure', 'required|min:0|lessThan:supply_pressure')}</div>
@@ -997,7 +997,7 @@ function createAllModals() {
                 <label><input type="radio" name="type" value="pressure_after_t"> T秒後の圧力</label>
             </div>
             <hr class="my-2">
-            ${createPressureInput('initial_pressure', '初期圧力', '0.5', 'initial_pressure_unit', 'required|min:0.2|max:0.99', 'required|min:2|max:9.99')}
+            ${createPressureInput('initial_pressure', '初期圧力', '0.5', 'initial_pressure_unit', 'required|min:0.02|max:0.99', 'required|min:0.2|max:9.99')}
             ${createValidatedInput('volume', 'タンク容積 (l)', '正の数', '60', 'required|min:0.1')}
             ${createValidatedInput('s', '絞り部のS (mm²)', '正の数', '18', 'required|min:0.01')}
             <div id="sp4-p-input" class="hidden">${createPressureInput('target_pressure', '目標圧力 P', '0.4', 'target_pressure_unit', 'required|min:0|lessThan:initial_pressure', 'required|min:0|lessThan:initial_pressure')}</div>
