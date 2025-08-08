@@ -849,7 +849,6 @@ function createAllModals() {
                     ${createValidatedInput('valve_s', 'バルブのS (mm²)', '正の数', '10', 'required|min:0.01')}
                     ${createValidatedInput('spicon_s', 'スピコンのS (mm²)', '正の数', '8', 'required|min:0.01')}
                     ${createValidatedInput('silencer_s', 'サイレンサのS (mm²)', '正の数', '15', 'required|min:0.01')}
-                    <div class="input-group"><label class="input-label">配管種類</label><select name="p1_pipe_type" class="input-field"><option value="nylon">ナイロンチューブ</option><option value="steel">鋼管</option></select></div>
                 </div>
             </div>
             
@@ -866,6 +865,7 @@ function createAllModals() {
             </div>
             <div id="p1-pipe-volume-calculate-inputs" class="hidden space-y-3">
                 ${createValidatedInput('p1_pipe_length', '配管の長さ (m)', '0.3～10', '1', 'required|min:0.3|max:10')}
+                <div class="input-group"><label class="input-label">配管種類</label><select name="p1_pipe_type" class="input-field"><option value="nylon">ナイロンチューブ</option><option value="steel">鋼管</option></select></div>
                 <div class="input-group">
                     <label class="input-label cursor-pointer" data-action="toggleTooltip" data-tooltip-target="#p1-steel-pipe-tooltip">配管の内径 (mm) ⓘ</label>
                     <input type="number" name="p1_pipe_diameter" class="input-field" placeholder="正の数" value="8" data-validate="required|min:1">
