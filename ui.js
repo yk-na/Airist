@@ -626,7 +626,24 @@ async function executeCalculation(functionId) {
 function displayCalculationResult(functionId, data) {
     clearDisplay('all');
     displayArea.classList.add('function-result-mode'); // 結果表示モードに切り替え
-    const resultText = Object.entries(data).map(([key, value]) => `${key}: ${value}`).join('\n');
+    
+    let resultText;
+    // P1機能の場合、PUSHとPULLの結果を分けて表示
+    if (functionId === 'P1') {
+        const pushEntries = Object.entries(data).filter(([key]) => key.startsWith('PUSH'));
+        const pullEntries = Object.entries(data).filter(([key]) => key.startsWith('PULL'));
+
+        let pushText = "--- PUSH ---\n";
+        pushText += pushEntries.map(([key, value]) => `${key.replace('PUSH ', '')}: ${value}`).join('\n');
+
+        let pullText = "--- PULL ---\n";
+        pullText += pullEntries.map(([key, value]) => `${key.replace('PULL ', '')}: ${value}`).join('\n');
+
+        resultText = `${pushText}\n\n${pullText}`;
+    } else {
+        // それ以外の機能は従来通り表示
+        resultText = Object.entries(data).map(([key, value]) => `${key}: ${value}`).join('\n');
+    }
     
     subDisplayContent.textContent = resultText;
     subDisplayContent.style.transform = `translateY(0px)`;
