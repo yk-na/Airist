@@ -848,10 +848,6 @@ function createAllModals() {
                 <label class="flex items-center"><input type="radio" name="type" value="time" checked><span class="ml-2">動作時間を計算</span></label>
                 <label class="flex items-center"><input type="radio" name="type" value="necessary_s"><span class="ml-2">必要有効断面積を計算</span></label>
             </div>
-            <div class="mt-2">
-                <label class="flex items-center"><input type="radio" name="direction" value="push" checked><span class="ml-2">PUSH</span></label>
-                <label class="flex items-center"><input type="radio" name="direction" value="pull"><span class="ml-2">PULL</span></label>
-            </div>
             <hr class="my-2">
             
             <div id="p1-time-inputs-container">
