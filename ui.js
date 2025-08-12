@@ -634,26 +634,20 @@ function displayCalculationResult(functionId, data) {
         const pullEntries = Object.entries(data).filter(([key]) => key.startsWith('PULL'));
 
         // PUSH結果のフォーマット
-        const pushText = pushEntries.map(([key, value], index) => {
-            // 1行目のみ接頭辞 "PUSH" を表示
-            if (index === 0) {
-                return `${key}: ${value}`; 
-            } else {
-                // 2行目以降は接頭辞を削除
-                return `${key.replace('PUSH ', '')}: ${value}`;
-            }
+        const pushTitle = 'ーーPUSHーー';
+        const pushLines = pushEntries.map(([key, value]) => {
+            // 接頭辞を削除して表示
+            return `${key.replace('PUSH ', '')}: ${value}`;
         }).join('\n');
+        const pushText = `${pushTitle}\n${pushLines}`;
 
         // PULL結果のフォーマット
-        const pullText = pullEntries.map(([key, value], index) => {
-            // 1行目のみ接頭辞 "PULL" を表示
-            if (index === 0) {
-                return `${key}: ${value}`;
-            } else {
-                // 2行目以降は接頭辞を削除
-                return `${key.replace('PULL ', '')}: ${value}`;
-            }
+        const pullTitle = 'ーーPULLーー';
+        const pullLines = pullEntries.map(([key, value]) => {
+            // 接頭辞を削除して表示
+            return `${key.replace('PULL ', '')}: ${value}`;
         }).join('\n');
+        const pullText = `${pullTitle}\n${pullLines}`;
 
         // PUSHとPULLの結果を改行1つで結合
         resultText = `${pushText}\n${pullText}`;
@@ -1303,3 +1297,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ウィンドウサイズが変更されたら、再度表示倍率を調整
 window.addEventListener('resize', adjustAppScale);
+" in the docume
