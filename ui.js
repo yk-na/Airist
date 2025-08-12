@@ -630,16 +630,16 @@ function displayCalculationResult(functionId, data) {
     let resultText;
     // P1機能の場合、PUSHとPULLの結果を分けて表示
     if (functionId === 'P1') {
+        // --- PUSH/PULLのタイトル行を廃止し、6行で表示するよう変更 ---
         const pushEntries = Object.entries(data).filter(([key]) => key.startsWith('PUSH'));
         const pullEntries = Object.entries(data).filter(([key]) => key.startsWith('PULL'));
 
-        let pushText = "--- PUSH ---\n";
-        pushText += pushEntries.map(([key, value]) => `${key.replace('PUSH ', '')}: ${value}`).join('\n');
+        // 各行に 'PUSH' または 'PULL' を含めて結合する
+        const pushText = pushEntries.map(([key, value]) => `${key}: ${value}`).join('\n');
+        const pullText = pullEntries.map(([key, value]) => `${key}: ${value}`).join('\n');
 
-        let pullText = "--- PULL ---\n";
-        pullText += pullEntries.map(([key, value]) => `${key.replace('PULL ', '')}: ${value}`).join('\n');
-
-        resultText = `${pushText}\n\n${pullText}`;
+        // PUSHとPULLの結果を改行1つで結合
+        resultText = `${pushText}\n${pullText}`;
     } else {
         // それ以外の機能は従来通り表示
         resultText = Object.entries(data).map(([key, value]) => `${key}: ${value}`).join('\n');
