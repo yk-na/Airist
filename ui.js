@@ -634,20 +634,18 @@ function displayCalculationResult(functionId, data) {
         const pullEntries = Object.entries(data).filter(([key]) => key.startsWith('PULL'));
 
         // PUSH結果のフォーマット
-        const pushTitle = 'ーーPUSHーー';
-        const pushLines = pushEntries.map(([key, value]) => {
-            // 接頭辞を削除して表示
-            return `${key.replace('PUSH ', '')}: ${value}`;
+        const pushText = pushEntries.map(([key, value], index) => {
+            const cleanKey = key.replace('PUSH ', '');
+            // 1行目のみタイトルを付加
+            return index === 0 ? `ーPUSHー${cleanKey}: ${value}` : `${cleanKey}: ${value}`;
         }).join('\n');
-        const pushText = `${pushTitle}\n${pushLines}`;
 
         // PULL結果のフォーマット
-        const pullTitle = 'ーーPULLーー';
-        const pullLines = pullEntries.map(([key, value]) => {
-            // 接頭辞を削除して表示
-            return `${key.replace('PULL ', '')}: ${value}`;
+        const pullText = pullEntries.map(([key, value], index) => {
+            const cleanKey = key.replace('PULL ', '');
+            // 1行目のみタイトルを付加
+            return index === 0 ? `ーPULLー${cleanKey}: ${value}` : `${cleanKey}: ${value}`;
         }).join('\n');
-        const pullText = `${pullTitle}\n${pullLines}`;
 
         // PUSHとPULLの結果を改行1つで結合
         resultText = `${pushText}\n${pullText}`;
@@ -1297,4 +1295,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ウィンドウサイズが変更されたら、再度表示倍率を調整
 window.addEventListener('resize', adjustAppScale);
-" in the docume
