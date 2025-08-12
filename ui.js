@@ -630,13 +630,30 @@ function displayCalculationResult(functionId, data) {
     let resultText;
     // P1機能の場合、PUSHとPULLの結果を分けて表示
     if (functionId === 'P1') {
-        // --- PUSH/PULLのタイトル行を廃止し、6行で表示するよう変更 ---
         const pushEntries = Object.entries(data).filter(([key]) => key.startsWith('PUSH'));
         const pullEntries = Object.entries(data).filter(([key]) => key.startsWith('PULL'));
 
-        // 各行に 'PUSH' または 'PULL' を含めて結合する
-        const pushText = pushEntries.map(([key, value]) => `${key}: ${value}`).join('\n');
-        const pullText = pullEntries.map(([key, value]) => `${key}: ${value}`).join('\n');
+        // PUSH結果のフォーマット
+        const pushText = pushEntries.map(([key, value], index) => {
+            // 1行目のみ接頭辞 "PUSH" を表示
+            if (index === 0) {
+                return `${key}: ${value}`; 
+            } else {
+                // 2行目以降は接頭辞を削除
+                return `${key.replace('PUSH ', '')}: ${value}`;
+            }
+        }).join('\n');
+
+        // PULL結果のフォーマット
+        const pullText = pullEntries.map(([key, value], index) => {
+            // 1行目のみ接頭辞 "PULL" を表示
+            if (index === 0) {
+                return `${key}: ${value}`;
+            } else {
+                // 2行目以降は接頭辞を削除
+                return `${key.replace('PULL ', '')}: ${value}`;
+            }
+        }).join('\n');
 
         // PUSHとPULLの結果を改行1つで結合
         resultText = `${pushText}\n${pullText}`;
