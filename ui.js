@@ -196,7 +196,7 @@ function calculate() {
         let evalExpression = expression.replace(/,/g, '').replace(/÷/g, '/').replace(/×/g, '*');
         
         // 無効な文字が含まれていないかチェック
-        if (/[^0-9\.\+\-\*\/\(\)\s]/.test(evalExpression)) throw new Error("無効な文字");
+        if (/[^0-9\.\+\-\*\/\(\)\se]/.test(evalExpression)) throw new Error("無効な文字");
         
         // Functionコンストラクタを使って文字列を数式として評価・実行
         let result = new Function('return ' + evalExpression)();
