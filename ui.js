@@ -647,8 +647,10 @@ function displayCalculationResult(functionId, data) {
             return index === 0 ? `ーPULLー${cleanKey}: ${value}` : `${cleanKey}: ${value}`;
         }).join('\n');
 
-        // PUSHとPULLの結果を改行1つで結合
-        resultText = `${pushText}\n${pullText}`;
+        // --- 変更箇所 ---
+        // PUSHとPULLの結果を改行1つで結合 (両方存在する場合のみ改行)
+        resultText = [pushText, pullText].filter(Boolean).join('\n');
+        // --- 変更ここまで ---
     } else {
         // それ以外の機能は従来通り表示
         resultText = Object.entries(data).map(([key, value]) => `${key}: ${value}`).join('\n');
@@ -856,6 +858,14 @@ function createAllModals() {
             <div data-change-handler="toggleP1">
                 <label class="flex items-center"><input type="radio" name="type" value="time" checked><span class="ml-2">動作時間を計算</span></label>
                 <label class="flex items-center"><input type="radio" name="type" value="necessary_s"><span class="ml-2">必要有効断面積を計算</span></label>
+            </div>
+            
+            <div class="input-group">
+                <label class="input-label">計算対象</label>
+                <div class="flex space-x-4 mt-1">
+                    <label class="flex items-center"><input type="checkbox" name="calc_push" value="true" checked><span class="ml-2">PUSH</span></label>
+                    <label class="flex items-center"><input type="checkbox" name="calc_pull" value="true" checked><span class="ml-2">PULL</span></label>
+                </div>
             </div>
             <hr class="my-2">
             
