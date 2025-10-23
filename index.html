@@ -133,7 +133,7 @@
         }
 
         /* アニメーションを適用 */
-        #feedback-link {
+        #feedback-link, #menu-toggle-button {
             animation: smoothColorChange 9s linear infinite;
         }
     </style>
@@ -144,11 +144,23 @@
         <!-- iPhoneコンテナ -->
         <div id="app-container" class="iphone-container flex flex-col">
             
-            <div class="h-12 flex-shrink-0 flex items-center justify-end px-5">
-                <a href="./復刻☆空圧先生リベンジャー.pdf" target="_blank" class="text-blue-700 font-semibold underline">
-                    取扱説明書 (PDF)
-                </a>
-                <a href="#" id="feedback-link" class="logo-font font-extrabold tracking-wide" style="text-decoration: underline;">取扱の注意点、要望はこちら</a>
+            <div class="h-12 flex-shrink-0 flex items-center justify-start px-5 relative">
+                <button id="menu-toggle-button" class="p-2 -ml-2 z-30">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+
+                <div id="dropdown-menu" class="hidden absolute top-0 left-0 w-full bg-white shadow-lg rounded-b-lg border border-gray-300 z-20 pt-14">
+                    <a href="./復刻☆空圧先生リベンジャー.pdf" target="_blank" class="block px-5 py-3 text-gray-800 text-lg hover:bg-gray-100 border-b">
+                        取扱説明書 (PDF)
+                    </a>
+                    <a href="#" id="feedback-link-menu" class="block px-5 py-3 text-gray-800 text-lg hover:bg-gray-100">
+                        要望・不具合報告
+                    </a>
+                </div>
             </div>
 
             <!-- 1. 表示エリア -->

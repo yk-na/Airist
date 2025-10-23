@@ -12,6 +12,8 @@ const scrollUpIndicator = document.getElementById('scroll-up-indicator'); // 上
 const scrollDownIndicator = document.getElementById('scroll-down-indicator'); // 下スクロールインジケーター
 const lockIcon = document.getElementById('lock-icon'); // 画面サイズ固定用のロックアイコン
 const unlockIcon = document.getElementById('unlock-icon'); // 画面サイズ固定解除用のアンロックアイコン
+const menuToggleButton = document.getElementById('menu-toggle-button');//メニューボタン
+const dropdownMenu = document.getElementById('dropdown-menu');//メニュードロップダウン
 
 // 電卓の状態を管理する変数
 let expression = '0'; // 現在の計算式を保持する文字列
@@ -1107,7 +1109,38 @@ function adjustAppScale() {
  */
 function setupEventListeners() {
     const appContainer = document.getElementById('app-container');
+    // --- メニューボタンのクリック処理 ---
+    if (menuToggleButton) {
+        menuToggleButton.addEventListener('click', (event) => {
+            event.stopPropagation(); // 他のクリックイベントへの伝播を停止
+            dropdownMenu.classList.toggle('hidden');
+        });
+    }
 
+// メニュー内のフィードバックリンクの処理
+    const feedbackLinkMenu = document.getElementById('feedback-link-menu');
+    if (feedbackLinkMenu) {
+        feedbackLinkMenu.addEventListener('click', async (event) => {
+            event.preventDefault();
+            dropdownMenu.classList.add('hidden'); // メニューを閉じる
+            
+            // ★直接バックエンドからURLを取得するロジックに変更
+            try {
+                // バックエンドからフィードバックフォームのURLを取得して開く
+                const response = await fetch(`${BACKEND_URL}/feedback-url`);
+                if (!response.ok) {
+                    throw new Error('Could not fetch feedback URL.');
+                }
+                const data = await response.json();
+                if (data.url) {
+                    window.open(data.url, '_blank');
+                }
+            } catch (error) {
+                console.error('Feedback link error:', error);
+                updateSubDisplay('リンクを取得できませんでした', true);
+            }
+        });
+    }
     // --- クリックイベントの委任 ---
     appContainer.addEventListener('click', (event) => {
         const button = event.target.closest('[data-action]');
@@ -1239,34 +1272,19 @@ function setupEventListeners() {
         }
     }, true); // キャプチャフェーズでイベントを捕捉
 
-    // --- フィードバックリンクのクリック処理 ---
-    const feedbackLink = document.getElementById('feedback-link');
-    if (feedbackLink) {
-        feedbackLink.addEventListener('click', async (event) => {
-            event.preventDefault(); // デフォルトのリンク遷移をキャンセル
-            try {
-                // バックエンドからフィードバックフォームのURLを取得して開く
-                const response = await fetch(`${BACKEND_URL}/feedback-url`);
-                if (!response.ok) {
-                    throw new Error('Could not fetch feedback URL.');
-                }
-                const data = await response.json();
-                if (data.url) {
-                    window.open(data.url, '_blank');
-                }
-            } catch (error) {
-                console.error('Feedback link error:', error);
-                updateSubDisplay('リンクを取得できませんでした', true);
-            }
-        });
-    }
-
     // --- ドキュメント全体のクリック処理（ツールチップを閉じるため） ---
     document.addEventListener('click', (event) => {
         const tooltip = document.querySelector('.tooltip:not(.hidden)');
         // ツールチップ本体と、それを開くためのⓘアイコン以外がクリックされたらツールチップを閉じる
         if (tooltip && !tooltip.contains(event.target) && !event.target.closest('[data-action="toggleTooltip"]')) {
             tooltip.classList.add('hidden');
+        }
+        // メニューを閉じる処理
+        if (dropdownMenu && !dropdownMenu.classList.contains('hidden')) {
+            // メニュー本体でもトグルボタンでもない場所がクリックされたら閉じる
+            if (menuToggleButton && !dropdownMenu.contains(event.target) && !menuToggleButton.contains(event.target)) {
+                dropdownMenu.classList.add('hidden');
+            }
         }
     });
 }
